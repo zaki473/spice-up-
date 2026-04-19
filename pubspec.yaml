@@ -110,6 +110,13 @@ flutter:
     - assets/images/top/SU_AVATAR_TOP2.png
     - assets/images/top/SU_AVATAR_TOP3.png
     - assets/images/top/SU_AVATAR_TOP4.png
+    # bagian badges
+    - assets/badges/SU_BADGES_01.SVG
+    - assets/badges/SU_BADGES_02.SVG
+    - assets/badges/SU_BADGES_03.SVG
+    # bagian resep  
+    - assets/badges/SU_FOOD_01_MI_GOMAK.PNG
+
 
   # To add assets to your application, add an assets section, like this:
   # assets:

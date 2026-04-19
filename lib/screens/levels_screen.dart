@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import 'package:flutter_svg/flutter_svg.dart'; // IMPORT INI
+import '../models/recipe_model.dart';
+import '../data/recipe_data.dart';
 import 'gameplay_screen.dart';
 
 class LevelsScreen extends StatelessWidget {
@@ -13,47 +15,75 @@ class LevelsScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColors.backgroundTop, AppColors.backgroundBottom],
+            colors: [Color(0xFFFFD15B), Color(0xFFFFE18B)],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const CircleAvatar(radius: 20, backgroundColor: Colors.white),
-                    const Text("Spice Up!", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-                    const Icon(Icons.notifications_active, color: Colors.red),
-                  ],
-                ),
-              ),
-              // Main Content
+              _buildHeader(),
               Expanded(
-                child: Row(
-                  children: [
-                    // Timeline Sidebar
-                    _buildTimeline(),
-                    // Recipe List
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.only(right: 16, top: 10),
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  itemCount: listResep.length,
+                  itemBuilder: (context, index) {
+                    final resep = listResep[index];
+                    
+                    // --- LOGIKA BADGE DINAMIS ---
+                    Widget? badge;
+                    if (index == 0) {
+                      badge = _buildTimelineBadge(
+                        "SPICE SPROUT", 
+                        Colors.orange.shade800, 
+                        'assets/badges/SU_BADGES_01.SVG' 
+                      );
+                    } else if (index > 0 && resep.difficulty != listResep[index - 1].difficulty) {
+                      if (resep.difficulty == Difficulty.litle) {
+                        badge = _buildTimelineBadge(
+                          "LITTLE MORTAR", 
+                          Colors.cyan.shade600, 
+                          'assets/badges/SU_BADGES_02.SVG'
+                        );
+                      } else if (resep.difficulty == Difficulty.bumbu) {
+                        badge = _buildTimelineBadge(
+                          "BUMBU BUDDY", 
+                          Colors.pinkAccent, 
+                          'assets/badges/SU_BADGES_03.SVG'
+                        );
+                      }
+                    }
+
+                    return IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildRecipeCard("MI GOMAK", "Batak Spicy Noodles", 4, true, context),
-                          _buildRecipeCard("IKAN KUAH KUNING", "Yellow Turmeric Fish Soup", 3, true, context),
-                          _buildRecipeCard("AYAM TALIWANG", "Lombok Spicy Grilled Chicken", 4, true, context),
-                          _buildRecipeCard("TINUTUAN", "Manado Vegetable Porridge", 0, true, context),
-                          _buildRecipeCard("PAPEDA", "Sago Porridge", 0, false, context),
+                          // --- KOLOM TIMELINE ---
+                          SizedBox(
+                            width: 75, // Dilebarkan sedikit agar badge tidak sesak
+                            child: Stack(
+                              alignment: Alignment.topCenter,
+                              children: [
+                                _buildDashedLine(index),
+                                if (badge != null) badge,
+                              ],
+                            ),
+                          ),
+                          // --- KOLOM KARTU MENU ---
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                top: badge != null ? 80 : 0, // Ditinggikan agar kartu tidak menabrak badge
+                                bottom: 20
+                              ),
+                              child: _buildLevelCard(context, resep),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
-              // Bottom Nav
               _buildBottomNav(),
             ],
           ),
@@ -62,70 +92,179 @@ class LevelsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeline() {
-    return Container(
-      width: 70,
-      child: Column(
-        children: [
-          const Icon(Icons.eco, color: Colors.orange, size: 30),
-          Expanded(
-            child: Container(width: 3, color: Colors.orange.withOpacity(0.5)),
-          ),
-          const Icon(Icons.soup_kitchen, color: Colors.blue, size: 30),
-          const SizedBox(height: 50),
-        ],
-      ),
+  // Desain Garis yang berubah warna sesuai kesulitan
+  Widget _buildDashedLine(int index) {
+    Color lineColor;
+    switch (listResep[index].difficulty) {
+      case Difficulty.spice: lineColor = Colors.orange.shade700; break;
+      case Difficulty.bumbu: lineColor = Colors.cyan.shade600; break;
+      case Difficulty.litle: lineColor = Colors.pinkAccent; break;
+    }
+
+    return Column(
+      children: List.generate(15, (i) => Container(
+        width: 3, height: 8, margin: const EdgeInsets.symmetric(vertical: 2),
+        decoration: BoxDecoration(
+          color: lineColor.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      )),
     );
   }
 
-  Widget _buildRecipeCard(String title, String desc, int stars, bool isUnlocked, BuildContext context) {
-    return GestureDetector(
-      onTap: isUnlocked ? () => Navigator.push(context, MaterialPageRoute(builder: (context) => const GameplayScreen())) : null,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.all(12),
+  // --- WIDGET BADGE DENGAN SVG DAN UKURAN TERKONTROL ---
+  Widget _buildTimelineBadge(String text, Color color, String imagePath) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      // Menghapus Container putih, langsung menggunakan SizedBox untuk mengatur ukuran
+      SizedBox(
+        width: 55,  // Kamu bisa perbesar ukurannya di sini karena lingkarannya sudah hilang
+        height: 55, 
+        child: SvgPicture.asset(
+          imagePath,
+          fit: BoxFit.contain,
+        ),
+      ),
+      const SizedBox(height: 4), // Jarak kecil antara gambar dan label teks
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: isUnlocked ? Colors.white : Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+          color: color, 
+          borderRadius: BorderRadius.circular(6),
+          // Tambahkan sedikit shadow pada label agar tetap terbaca jelas
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)
+          ]
+        ),
+        child: Text(
+          text, 
+          style: const TextStyle(
+            color: Colors.white, 
+            fontSize: 7, 
+            fontWeight: FontWeight.bold
+          )
+        ),
+      ),
+    ],
+  );
+}
+
+  Widget _buildLevelCard(BuildContext context, Recipe resep) {
+    return GestureDetector(
+      onTap: !resep.isLocked 
+          ? () => Navigator.push(context, MaterialPageRoute(builder: (context) => GameplayScreen(resep: resep))) 
+          : null,
+      child: Container(
+        height: 115,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 15, offset: const Offset(0, 8))
+          ],
         ),
         child: Row(
           children: [
-            CircleAvatar(radius: 30, backgroundColor: Colors.orange.shade50, child: const Icon(Icons.restaurant, color: Colors.orange)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text(desc, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                  Row(children: List.generate(5, (i) => Icon(Icons.star, size: 14, color: i < stars ? Colors.orange : Colors.grey))),
-                ],
+            Container(
+              width: 105,
+              decoration: BoxDecoration(
+                color: resep.isLocked ? Colors.grey.shade200 : resep.sunburstColor,
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(25)),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.restaurant_menu, 
+                  size: 45, 
+                  color: resep.isLocked ? Colors.grey : Colors.orangeAccent
+                ),
               ),
             ),
-            Icon(Icons.play_circle_fill, size: 40, color: isUnlocked ? Colors.orange : Colors.grey),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      resep.title, 
+                      style: TextStyle(
+                        fontSize: 18, 
+                        fontWeight: FontWeight.w900, 
+                        color: resep.isLocked ? Colors.grey : const Color(0xFF4E342E)
+                      )
+                    ),
+                    Text(
+                      resep.subtitle.toUpperCase(), 
+                      style: TextStyle(fontSize: 8, color: Colors.grey.shade500, fontWeight: FontWeight.bold)
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: List.generate(5, (i) => Icon(
+                        Icons.star_rounded, 
+                        size: 18, 
+                        color: i < resep.stars ? Colors.orange : Colors.grey.shade300
+                      )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 15),
+              child: resep.isLocked 
+                ? const Icon(Icons.lock_outline, color: Colors.grey, size: 28)
+                : Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(colors: [Colors.orangeAccent, Colors.deepOrange]),
+                    ),
+                    child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+                  ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBottomNav() {
-    return Container(
-      margin: const EdgeInsets.all(15),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30)),
+  // --- HEADER & NAV ---
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: Colors.blueGrey.shade100, borderRadius: BorderRadius.circular(20)),
-            child: const Row(children: [Icon(Icons.home), Text(" Home")]),
+          const CircleAvatar(radius: 22, backgroundColor: Colors.white, child: Icon(Icons.person, color: Colors.orange)),
+          SvgPicture.asset(
+            'assets/images/logo_dan_bg/SU_TYPEFACE.svg',
+              width: 100, 
+              fit: BoxFit.contain,
           ),
-          const Icon(Icons.play_arrow, color: Colors.grey),
-          const Icon(Icons.menu_book, color: Colors.grey),
-          const Icon(Icons.person, color: Colors.grey),
+          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none, color: Color(0xFF4E342E))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      height: 70,
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        borderRadius: BorderRadius.circular(35),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 15)]
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Icon(Icons.home_filled, color: Colors.orange, size: 30),
+          Icon(Icons.play_circle_outline, color: Colors.grey, size: 30),
+          Icon(Icons.menu_book, color: Colors.grey, size: 30),
+          Icon(Icons.person_outline, color: Colors.grey, size: 30),
         ],
       ),
     );

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../constants/app_colors.dart';
 import 'levels_screen.dart'; 
-import 'multiplayer_score_screen.dart'; // Import halaman baru
-import 'mutuals_screen.dart';           // Import halaman baru
-import 'spice_journal_screen.dart';     // Import halaman baru
+import 'multiplayer_score_screen.dart';
+import 'mutuals_screen.dart';
+import 'spice_journal_screen.dart';
 
 class HomepageScreen extends StatelessWidget {
   final String skinPath;
@@ -56,20 +56,33 @@ class HomepageScreen extends StatelessWidget {
             children: [
               Column(
                 children: [
-                  // --- HEADER ---
+                  // --- HEADER DENGAN LOGO DI TENGAH ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(children: const [
-                          CircleAvatar(backgroundColor: Colors.black, radius: 16, child: Icon(Icons.person, color: Colors.white, size: 20)),
-                          SizedBox(width: 8),
-                          Text('Hi, Anggun!', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white))
-                        ]),
-                        const Text('Spice Up!', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.orangePrimary, fontSize: 18)),
-                        const Icon(Icons.notifications, color: AppColors.orangePrimary),
-                      ],
+                    child: SizedBox(
+                      height: 50,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(children: const [
+                                CircleAvatar(backgroundColor: Colors.black, radius: 16, child: Icon(Icons.person, color: Colors.white, size: 20)),
+                                SizedBox(width: 8),
+                                Text('Hi, Anggun!', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white))
+                              ]),
+                              const Icon(Icons.notifications, color: AppColors.orangePrimary),
+                            ],
+                          ),
+                          // SU_TYPEFACE di tengahin
+                          SvgPicture.asset(
+                            'assets/images/logo_dan_bg/SU_TYPEFACE.svg',
+                            width: 100, 
+                            fit: BoxFit.contain,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
@@ -149,12 +162,12 @@ class HomepageScreen extends StatelessWidget {
                         crossAxisCount: 2,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
-                        childAspectRatio: 0.9,
+                        childAspectRatio: 0.85, // Disesuaikan agar muat komponen bawah
                         children: [
-                          _buildRecipeCard(context, 'Mi Gomak', 'Batak Spicy Noodles', 4),
-                          _buildRecipeCard(context, 'Ikan Kuah Kuning', 'Yellow Turmeric Fish Soup', 5),
-                          _buildRecipeCard(context, 'Ayam Betutu', 'Balinese Spiced Chicken', 4),
-                          _buildRecipeCard(context, 'Soto Ayam', 'Indonesian Chicken Soup', 5),
+                          _buildRecipeCard(context, 'Mi Gomak', 'Batak Spicy Noodles', 3, 'Nice!', 'assets/images/mi_gomak.png'),
+                          _buildRecipeCard(context, 'Ikan Kuah Kuning', 'Yellow Turmeric Fish Soup', 4, 'Excellent!', 'assets/images/ikan_kuning.png'),
+                          _buildRecipeCard(context, 'Ayam Betutu', 'Balinese Spiced Chicken', 4, 'Great!', 'assets/images/ayam_betutu.png'),
+                          _buildRecipeCard(context, 'Soto Ayam', 'Indonesian Chicken Soup', 5, 'Perfect!', 'assets/images/soto_ayam.png'),
                         ],
                       ),
                     ),
@@ -163,7 +176,7 @@ class HomepageScreen extends StatelessWidget {
                 ],
               ),
 
-              // --- BOTTOM NAVIGATION BAR (UPDATED) ---
+              // --- BOTTOM NAVIGATION BAR ---
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Padding(
@@ -174,30 +187,17 @@ class HomepageScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // HOME
                         GestureDetector(
-                          onTap: () {}, // Sudah di Home
+                          onTap: () {},
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                             decoration: BoxDecoration(color: AppColors.orangePrimary, borderRadius: BorderRadius.circular(20)),
                             child: Row(children: const [Icon(Icons.home, color: Colors.white, size: 20), SizedBox(width: 4), Text('Home', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))]),
                           ),
                         ),
-                        // PLAY -> Ke Levels
-                        IconButton(
-                          icon: const Icon(Icons.play_circle_fill, color: Colors.grey, size: 28),
-                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LevelsScreen())),
-                        ),
-                        // JOURNAL -> Ke Spice Journal
-                        IconButton(
-                          icon: const Icon(Icons.menu_book, color: Colors.grey, size: 28),
-                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SpiceJournalScreen())),
-                        ),
-                        // PROFILE/FRIENDS -> Ke Mutuals
-                        IconButton(
-                          icon: const Icon(Icons.person, color: Colors.grey, size: 28),
-                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MutualsScreen())),
-                        ),
+                        IconButton(icon: const Icon(Icons.play_circle_fill, color: Colors.grey, size: 28), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LevelsScreen()))),
+                        IconButton(icon: const Icon(Icons.menu_book, color: Colors.grey, size: 28), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SpiceJournalScreen()))),
+                        IconButton(icon: const Icon(Icons.person, color: Colors.grey, size: 28), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MutualsScreen()))),
                       ],
                     ),
                   ),
@@ -210,29 +210,76 @@ class HomepageScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecipeCard(BuildContext context, String title, String subtitle, int stars) {
+  // Widget Kartu yang diupdate agar sama persis dengan screenshot
+  Widget _buildRecipeCard(BuildContext context, String title, String subtitle, int stars, String label, String imagePath) {
     return GestureDetector(
-      // Navigasi ke Multiplayer Score sebagai contoh saat klik kartu
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MultiplayerScoreScreen())),
       child: Container(
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5)]),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.orange.withOpacity(0.4), width: 1.5), // Border oranye tipis
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: Container(decoration: const BoxDecoration(color: Colors.lightBlueAccent, borderRadius: BorderRadius.vertical(top: Radius.circular(16))), child: const Center(child: Icon(Icons.food_bank, size: 60, color: Colors.white)))),
+            // Bagian Atas: Background Sunburst + Gambar Makanan
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  // Disini Anda bisa pakai asset background matahari jika ada, atau warna krem
+                  color: const Color(0xFFFFEBD2), 
+                ),
+                child: Center(
+                  // Ganti dengan Image.asset makanan yang sesuai
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Image.asset(imagePath, fit: BoxFit.contain), 
+                  ),
+                ),
+              ),
+            ),
+            // Bagian Bawah: Teks dan Kontrol
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                  Text(subtitle, style: const TextStyle(fontSize: 8, color: Colors.grey)),
-                  const SizedBox(height: 4),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF3E2723))),
+                  Text(subtitle, style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(children: List.generate(5, (index) => Icon(index < stars ? Icons.star : Icons.star_border, color: AppColors.orangePrimary, size: 10))),
-                      const Icon(Icons.play_circle_fill, color: AppColors.orangePrimary, size: 20)
+                      // Bintang dan Label (Nice!, Excellent!)
+                      Row(
+                        children: [
+                          ...List.generate(5, (index) => Icon(
+                            Icons.star,
+                            color: index < stars ? Colors.orange : Colors.grey.shade300,
+                            size: 14,
+                          )),
+                          const SizedBox(width: 4),
+                          Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey)),
+                        ],
+                      ),
+                      // Tombol Play Oranye Bulat
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))],
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF9800), Color(0xFFE65100)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                        child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
+                      ),
                     ],
                   )
                 ],

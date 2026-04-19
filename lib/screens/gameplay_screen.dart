@@ -1,97 +1,61 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import '../models/recipe_model.dart';
 import 'score_screen.dart';
 
-class GameplayScreen extends StatelessWidget {
-  const GameplayScreen({super.key});
+class GameplayScreen extends StatefulWidget {
+  final Recipe resep;
+  const GameplayScreen({super.key, required this.resep});
+
+  @override
+  State<GameplayScreen> createState() => _GameplayScreenState();
+}
+
+class _GameplayScreenState extends State<GameplayScreen> {
+  int currentIndex = 0;
+  int score = 0;
+
+  void _answer(int index) {
+    if (index == widget.resep.questions[currentIndex].correctAnswerIndex) {
+      score += 10;
+    }
+
+    setState(() {
+      if (currentIndex < widget.resep.questions.length - 1) {
+        currentIndex++;
+      } else {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ScoreScreen(score: score)));
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final q = widget.resep.questions[currentIndex];
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: [AppColors.backgroundTop, AppColors.backgroundBottom]),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Text("WHAT IS THIS\nSPICE CALLED?", 
-                  textAlign: TextAlign.center, 
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.orange)),
+      backgroundColor: Colors.orange.shade50,
+      appBar: AppBar(title: Text(widget.resep.title), backgroundColor: Colors.orange),
+      body: Column(
+        children: [
+          const SizedBox(height: 20),
+          Text("Question ${currentIndex + 1} of ${widget.resep.questions.length}"),
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(q.text, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+          ),
+          const Spacer(),
+          ...List.generate(q.options.length, (i) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                onPressed: () => _answer(i),
+                child: Text(q.options[i]),
               ),
-              // Clipboard Area
-              _buildClipboard(),
-              const Spacer(),
-              // Options Grid
-              _buildOptions(context),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_ios)),
-          const Text("Spice Up!", style: TextStyle(fontWeight: FontWeight.bold)),
-          const Icon(Icons.arrow_forward_ios),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildClipboard() {
-    return Container(
-      width: 280,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: Colors.brown.shade400, borderRadius: BorderRadius.circular(15)),
-      child: Column(
-        children: [
-          Container(height: 10, width: 60, decoration: BoxDecoration(color: Colors.brown.shade800, borderRadius: BorderRadius.circular(5))),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            color: Colors.white,
-            padding: const EdgeInsets.all(15),
-            child: Column(
-              children: [
-                const Icon(Icons.eco, size: 100, color: Colors.green), // Ganti dengan image rempah
-                const Text("????", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.orange)),
-                const Text("HINT: This spice creates a tingling, numbing sensation on your tongue.", 
-                  textAlign: TextAlign.center, style: TextStyle(fontSize: 10)),
-              ],
             ),
-          ),
+          )),
+          const SizedBox(height: 50),
         ],
-      ),
-    );
-  }
-
-  Widget _buildOptions(context) {
-    final List<String> options = ["Black Pepper", "Sichuan Pepper", "Andaliman", "Coriander"];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GridView.builder(
-        shrinkWrap: true,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 2.5, mainAxisSpacing: 10, crossAxisSpacing: 10),
-        itemCount: options.length,
-        itemBuilder: (context, index) {
-          return ElevatedButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ScoreScreen())),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-            child: Text(options[index], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          );
-        },
       ),
     );
   }
