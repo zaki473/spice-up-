@@ -6,11 +6,13 @@ class Question {
   final String text;
   final List<String> options;
   final int correctAnswerIndex;
+  final String? imagePath;
 
   Question({
     required this.text,
     required this.options,
     required this.correctAnswerIndex,
+    this.imagePath,
   });
 }
 
@@ -18,7 +20,7 @@ class Recipe {
   final String title;
   final String subtitle;
   final String imagePath;
-  final int stars;
+  int stars;
   final bool isLocked;
   final Color sunburstColor;
   final Difficulty difficulty;

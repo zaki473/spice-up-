@@ -116,8 +116,26 @@ flutter:
     - assets/badges/SU_BADGES_03.SVG
     # bagian resep  
     - assets/badges/SU_FOOD_01_MI_GOMAK.PNG
-
-
+    # bagian stars
+    - assets/stars/SU_ICONS_01.SVG
+    - assets/stars/SU_ICONS_02.SVG
+    # bagian quiz
+    - assets/quiz/SPC_ANDALIMAN.PNG
+    - assets/quiz/SPC_BAYLEAVES.PNG
+    - assets/quiz/SPC_CANDLENUT.PNG
+    - assets/quiz/SPC_CHILI.png
+    - assets/quiz/SPC_CORIANDER.png
+    - assets/quiz/SPC_CUMIN.png
+    - assets/quiz/SPC_GALANGAL.png
+    - assets/quiz/SPC_GARLIC.png
+    - assets/quiz/SPC_GINGER.png
+    - assets/quiz/SPC_LEMONGRASS.png
+    - assets/quiz/SPC_LIME.png
+    - assets/quiz/SPC_PALMSUGAR.png
+    - assets/quiz/SPC_SHALLOT.png
+    - assets/quiz/SPC_SHRIMPPASTE.png
+    - assets/quiz/SPC_TORCHGINGERFLOWER.png
+    - assets/quiz/SPC_TURMERIC.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
