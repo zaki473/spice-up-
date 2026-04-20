@@ -1,8 +1,35 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import 'homepage_screen.dart';
+import 'levels_screen.dart';
+import 'spice_journal_screen.dart';
 
 class MutualsScreen extends StatelessWidget {
-  const MutualsScreen({super.key});
+  // Parameter avatar agar data karakter tetap terjaga
+  final String skinPath;
+  final String eyePath;
+  final String mouthPath;
+  final String nosePath;
+  final String browsPath;
+  final String hairPath;
+  final String bangsPath;
+  final String shirtPath;
+  final Color shirtColor;
+  final IconData hairStyle;
+
+  const MutualsScreen({
+    super.key,
+    this.skinPath = 'assets/images/avatar/skin/SKIN_01.svg',
+    this.eyePath = 'assets/images/avatar/eyes/EYE_01.svg',
+    this.mouthPath = 'assets/images/avatar/mouth/MOUTH_01.svg',
+    this.nosePath = 'assets/images/avatar/nose/NOSE_01.svg',
+    this.browsPath = 'assets/images/avatar/brows/BROW_01.svg',
+    this.hairPath = 'assets/images/avatar/hair/HAIR_01.svg',
+    this.bangsPath = 'assets/images/avatar/bangs/BANGS_01.svg',
+    this.shirtPath = 'assets/images/avatar/shirt/SHIRT_01.svg',
+    this.shirtColor = Colors.orange,
+    this.hairStyle = Icons.person,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +57,7 @@ class MutualsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              _buildBottomNav(),
+              _buildBottomNav(context), // Navbar gaya baru
             ],
           ),
         ),
@@ -44,8 +71,8 @@ class MutualsScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          CircleAvatar(radius: 18, backgroundColor: Colors.white),
-          Text("Spice Up!", style: TextStyle(fontWeight: FontWeight.bold)),
+          CircleAvatar(radius: 18, backgroundColor: Colors.white, child: Icon(Icons.person, size: 20, color: Colors.grey)),
+          Text("Spice Up!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           Icon(Icons.notifications, color: Colors.red),
         ],
       ),
@@ -117,18 +144,62 @@ class MutualsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNav() {
+  // UPDATE: Navbar Gaya LevelsScreen
+  Widget _buildBottomNav(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30)),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20), // Floating margin
+      height: 70,
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(35),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 15)]),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Icon(Icons.home, color: Colors.grey),
-          Icon(Icons.play_circle, color: Colors.grey),
-          Icon(Icons.menu_book, color: Colors.grey),
-          CircleAvatar(radius: 15, backgroundColor: Colors.orange, child: Icon(Icons.person, size: 18, color: Colors.white)),
+          // Home
+          IconButton(
+            icon: const Icon(Icons.home_outlined, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomepageScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+                hairStyle: hairStyle,
+              )),
+            ),
+          ),
+
+          // Levels / Play
+          IconButton(
+            icon: const Icon(Icons.play_circle_outline, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => LevelsScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+                hairStyle: hairStyle,
+              )),
+            ),
+          ),
+
+          // Spice Journal
+          IconButton(
+            icon: const Icon(Icons.menu_book_outlined, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => SpiceJournalScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+                hairStyle: hairStyle,
+              )),
+            ),
+          ),
+
+          // Person / Profile (AKTIF - Oranye)
+          const Icon(Icons.person, color: Colors.orange, size: 35),
         ],
       ),
     );

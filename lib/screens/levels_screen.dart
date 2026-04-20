@@ -2,10 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/recipe_model.dart';
 import '../data/recipe_data.dart';
+import '../constants/app_colors.dart'; // Pastikan import ini ada
 import 'gameplay_screen.dart';
+import 'homepage_screen.dart'; // Import halaman tujuan
+import 'spice_journal_screen.dart';
+import 'mutuals_screen.dart';
 
 class LevelsScreen extends StatefulWidget {
-  const LevelsScreen({super.key});
+  // Tambahkan parameter avatar agar bisa dipassing kembali ke Homepage
+  final String skinPath;
+  final String eyePath;
+  final String mouthPath;
+  final String nosePath;
+  final String browsPath;
+  final String hairPath;
+  final String bangsPath;
+  final String shirtPath;
+  final Color shirtColor;
+  final IconData hairStyle;
+
+  const LevelsScreen({
+    super.key,
+    this.skinPath = 'assets/images/avatar/skin/SKIN_01.svg', // Default value jika perlu
+    this.eyePath = 'assets/images/avatar/eyes/EYE_01.svg',
+    this.mouthPath = 'assets/images/avatar/mouth/MOUTH_01.svg',
+    this.nosePath = 'assets/images/avatar/nose/NOSE_01.svg',
+    this.browsPath = 'assets/images/avatar/brows/BROW_01.svg',
+    this.hairPath = 'assets/images/avatar/hair/HAIR_01.svg',
+    this.bangsPath = 'assets/images/avatar/bangs/BANGS_01.svg',
+    this.shirtPath = 'assets/images/avatar/shirt/SHIRT_01.svg',
+    this.shirtColor = Colors.orange,
+    this.hairStyle = Icons.person,
+  });
 
   @override
   State<LevelsScreen> createState() => _LevelsScreenState();
@@ -16,13 +44,11 @@ class _LevelsScreenState extends State<LevelsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Pre-cache semua gambar utama agar saat scroll tidak ada lag "putih"
     for (var resep in listResep) {
       precacheImage(AssetImage(resep.imagePath), context);
     }
   }
 
-  // Helper untuk Loading Indicator Kecil
   Widget _loader() => const Center(
         child: SizedBox(
           width: 20,
@@ -31,12 +57,10 @@ class _LevelsScreenState extends State<LevelsScreen> {
         ),
       );
 
-  // Helper untuk Memuat Gambar PNG/JPG dengan Animasi
   Widget _optimizedImage(String path, {double width = 70}) {
     return Image.asset(
       path,
       width: width,
-      // Mengurangi pemakaian RAM dengan menyesuaikan ukuran decode
       cacheWidth: (width * MediaQuery.of(context).devicePixelRatio).round(),
       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
         if (wasSynchronouslyLoaded) return child;
@@ -51,7 +75,6 @@ class _LevelsScreenState extends State<LevelsScreen> {
     );
   }
 
-  // Helper untuk Memuat SVG dengan Placeholder
   Widget _optimizedSvg(String path, {double width = 55}) {
     return SvgPicture.asset(
       path,
@@ -78,7 +101,6 @@ class _LevelsScreenState extends State<LevelsScreen> {
               _buildHeader(),
               Expanded(
                 child: ListView.builder(
-                  // Menambah cacheExtent agar item di bawah layar sudah diproses sedikit sebelumnya
                   cacheExtent: 500, 
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   itemCount: listResep.length,
@@ -127,7 +149,7 @@ class _LevelsScreenState extends State<LevelsScreen> {
                   },
                 ),
               ),
-              _buildBottomNav(),
+              _buildBottomNav(context),
             ],
           ),
         ),
@@ -251,21 +273,57 @@ class _LevelsScreenState extends State<LevelsScreen> {
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       height: 70,
       decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(35),
-          boxShadow: [const BoxShadow(color: Colors.black12, blurRadius: 15)]),
-      child: const Row(
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 15)]),
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Icon(Icons.home_filled, color: Colors.orange, size: 30),
-          Icon(Icons.play_circle_outline, color: Colors.grey, size: 30),
-          Icon(Icons.menu_book, color: Colors.grey, size: 30),
-          Icon(Icons.person_outline, color: Colors.grey, size: 30),
+          // Navigasi ke Home
+          IconButton(
+            icon: const Icon(Icons.home_filled, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomepageScreen(
+                skinPath: widget.skinPath,
+                eyePath: widget.eyePath,
+                mouthPath: widget.mouthPath,
+                nosePath: widget.nosePath,
+                browsPath: widget.browsPath,
+                hairPath: widget.hairPath,
+                bangsPath: widget.bangsPath,
+                shirtPath: widget.shirtPath,
+                shirtColor: widget.shirtColor,
+                hairStyle: widget.hairStyle,
+              )),
+            ),
+          ),
+          
+          // Play (Halaman Sekarang - beri warna orange)
+          const Icon(Icons.play_circle_filled, color: Colors.orange, size: 30),
+
+          // Navigasi ke Journal
+          IconButton(
+            icon: const Icon(Icons.menu_book, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const SpiceJournalScreen()),
+            ),
+          ),
+
+          // Navigasi ke Profile / Mutuals
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MutualsScreen()),
+            ),
+          ),
         ],
       ),
     );

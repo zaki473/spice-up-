@@ -56,7 +56,7 @@ class HomepageScreen extends StatelessWidget {
             children: [
               Column(
                 children: [
-                  // --- HEADER DENGAN LOGO DI TENGAH ---
+                  // --- HEADER ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                     child: SizedBox(
@@ -75,7 +75,6 @@ class HomepageScreen extends StatelessWidget {
                               const Icon(Icons.notifications, color: AppColors.orangePrimary),
                             ],
                           ),
-                          // SU_TYPEFACE di tengahin
                           SvgPicture.asset(
                             'assets/images/logo_dan_bg/SU_TYPEFACE.svg',
                             width: 100, 
@@ -162,7 +161,7 @@ class HomepageScreen extends StatelessWidget {
                         crossAxisCount: 2,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
-                        childAspectRatio: 0.85, // Disesuaikan agar muat komponen bawah
+                        childAspectRatio: 0.85,
                         children: [
                           _buildRecipeCard(context, 'Mi Gomak', 'Batak Spicy Noodles', 3, 'Nice!', 'assets/images/mi_gomak.png'),
                           _buildRecipeCard(context, 'Ikan Kuah Kuning', 'Yellow Turmeric Fish Soup', 4, 'Excellent!', 'assets/images/ikan_kuning.png'),
@@ -172,36 +171,14 @@ class HomepageScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 80),
+                  const SizedBox(height: 100), // Memberi ruang untuk Navbar melayang
                 ],
               ),
 
-              // --- BOTTOM NAVIGATION BAR ---
+              // --- BOTTOM NAVIGATION BAR (Gaya Levels) ---
               Align(
                 alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Container(
-                    height: 60,
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)]),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        GestureDetector(
-                          onTap: () {},
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            decoration: BoxDecoration(color: AppColors.orangePrimary, borderRadius: BorderRadius.circular(20)),
-                            child: Row(children: const [Icon(Icons.home, color: Colors.white, size: 20), SizedBox(width: 4), Text('Home', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))]),
-                          ),
-                        ),
-                        IconButton(icon: const Icon(Icons.play_circle_fill, color: Colors.grey, size: 28), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LevelsScreen()))),
-                        IconButton(icon: const Icon(Icons.menu_book, color: Colors.grey, size: 28), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SpiceJournalScreen()))),
-                        IconButton(icon: const Icon(Icons.person, color: Colors.grey, size: 28), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MutualsScreen()))),
-                      ],
-                    ),
-                  ),
-                ),
+                child: _buildBottomNav(context),
               )
             ],
           ),
@@ -210,30 +187,92 @@ class HomepageScreen extends StatelessWidget {
     );
   }
 
-  // Widget Kartu yang diupdate agar sama persis dengan screenshot
+  // Fungsi Navbar yang sudah diupdate sesuai gaya LevelsScreen
+  Widget _buildBottomNav(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20), // Melayang seperti Levels
+      height: 70,
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(35),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 15)]),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // HOME (Aktif)
+          const Icon(Icons.home_filled, color: Colors.orange, size: 30),
+          
+          // PLAY / LEVELS (Gunakan pushReplacement agar stack rapi)
+          IconButton(
+            icon: const Icon(Icons.play_circle_outline, color: Colors.grey, size: 30), 
+            onPressed: () => Navigator.pushReplacement(
+              context, 
+              MaterialPageRoute(builder: (context) => LevelsScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath, 
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath, 
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor, 
+                hairStyle: hairStyle,
+              ))
+            )
+          ),
+
+          // SPICE JOURNAL
+          IconButton(
+            icon: const Icon(Icons.menu_book, color: Colors.grey, size: 30), 
+            onPressed: () => Navigator.pushReplacement(
+              context, 
+              MaterialPageRoute(builder: (context) => SpiceJournalScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath, 
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath, 
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor, 
+                hairStyle: hairStyle,
+              ))
+            )
+          ),
+
+          // MUTUALS / PROFILE
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30), 
+            onPressed: () => Navigator.pushReplacement(
+              context, 
+              MaterialPageRoute(builder: (context) => MutualsScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath, 
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath, 
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor, 
+                hairStyle: hairStyle,
+              ))
+            )
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRecipeCard(BuildContext context, String title, String subtitle, int stars, String label, String imagePath) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MultiplayerScoreScreen())),
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => MultiplayerScoreScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath, 
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath, 
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor, 
+                hairStyle: hairStyle,
+      ))),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.orange.withOpacity(0.4), width: 1.5), // Border oranye tipis
+          border: Border.all(color: Colors.orange.withOpacity(0.4), width: 1.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Bagian Atas: Background Sunburst + Gambar Makanan
             Expanded(
               child: Container(
                 margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  // Disini Anda bisa pakai asset background matahari jika ada, atau warna krem
                   color: const Color(0xFFFFEBD2), 
                 ),
                 child: Center(
-                  // Ganti dengan Image.asset makanan yang sesuai
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Image.asset(imagePath, fit: BoxFit.contain), 
@@ -241,44 +280,34 @@ class HomepageScreen extends StatelessWidget {
                 ),
               ),
             ),
-            // Bagian Bawah: Teks dan Kontrol
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF3E2723))),
-                  Text(subtitle, style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500)),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF3E2723))),
+                  Text(subtitle, style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.w500)),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Bintang dan Label (Nice!, Excellent!)
                       Row(
                         children: [
                           ...List.generate(5, (index) => Icon(
                             Icons.star,
                             color: index < stars ? Colors.orange : Colors.grey.shade300,
-                            size: 14,
+                            size: 12,
                           )),
-                          const SizedBox(width: 4),
-                          Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey)),
                         ],
                       ),
-                      // Tombol Play Oranye Bulat
                       Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
+                        width: 28,
+                        height: 28,
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))],
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF9800), Color(0xFFE65100)],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
+                          gradient: LinearGradient(colors: [Color(0xFFFF9800), Color(0xFFE65100)]),
                         ),
-                        child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
+                        child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
                       ),
                     ],
                   )
