@@ -2,12 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/recipe_model.dart';
 import 'levels_screen.dart';
+import 'homepage_screen.dart';
+import 'spice_journal_screen.dart';
+import 'mutuals_screen.dart';
 
 class ScoreScreen extends StatelessWidget {
   final int score;
   final Recipe resep;
 
-  const ScoreScreen({super.key, required this.score, required this.resep});
+  // Tambahkan parameter avatar agar data tetap terjaga saat ke Home
+  final String skinPath;
+  final String eyePath;
+  final String mouthPath;
+  final String nosePath;
+  final String browsPath;
+  final String hairPath;
+  final String bangsPath;
+  final String shirtPath;
+  final Color shirtColor;
+  final IconData hairStyle;
+
+  const ScoreScreen({
+    super.key, 
+    required this.score, 
+    required this.resep,
+    this.skinPath = 'assets/images/avatar/skin/SKIN_01.svg',
+    this.eyePath = 'assets/images/avatar/eyes/EYE_01.svg',
+    this.mouthPath = 'assets/images/avatar/mouth/MOUTH_01.svg',
+    this.nosePath = 'assets/images/avatar/nose/NOSE_01.svg',
+    this.browsPath = 'assets/images/avatar/brows/BROW_01.svg',
+    this.hairPath = 'assets/images/avatar/hair/HAIR_01.svg',
+    this.bangsPath = 'assets/images/avatar/bangs/BANGS_01.svg',
+    this.shirtPath = 'assets/images/avatar/shirt/SHIRT_01.svg',
+    this.shirtColor = Colors.orange,
+    this.hairStyle = Icons.person,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,78 +55,52 @@ class ScoreScreen extends StatelessWidget {
             children: [
               _buildHeader(),
 
-              // Tombol Back
+              // Tombol Back menuju Levels
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: IconButton(
-                    onPressed: () => Navigator.pushAndRemoveUntil(
+                    onPressed: () => Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const LevelsScreen(),
-                      ),
-                      (route) => false,
+                      MaterialPageRoute(builder: (context) => LevelsScreen(
+                        skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+                        nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+                        bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+                        hairStyle: hairStyle,
+                      )),
                     ),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      color: Color(0xFF4E342E),
-                    ),
+                    icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF4E342E)),
                   ),
                 ),
               ),
 
-              // --- BAGIAN BINTANG (UKURAN BESAR & MELENGKUNG) ---
               const SizedBox(height: 10),
               _buildLargeStarRow(context, resep.stars),
 
-              // --- GAMBAR MAKANAN DINAMIS ---
               const SizedBox(height: 20),
               Expanded(
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Lingkaran cahaya di belakang makanan
                     Container(
-                      width: 280,
-                      height: 280,
+                      width: 280, height: 280,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.5),
-                            blurRadius: 50,
-                            spreadRadius: 20,
-                          ),
-                        ],
+                        boxShadow: [BoxShadow(color: Colors.white.withOpacity(0.5), blurRadius: 50, spreadRadius: 20)],
                       ),
                     ),
-                    // Gambar Makanan
-                    Image.asset(
-                      resep.imagePath,
-                      width: 250,
-                      fit: BoxFit.contain,
-                    ),
+                    Image.asset(resep.imagePath, width: 250, fit: BoxFit.contain),
                   ],
                 ),
               ),
 
-              // --- TEKS SCORE ---
               const Text(
                 "GOOD JOB!",
                 style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.orange,
-                  fontStyle: FontStyle.italic,
-                  letterSpacing: 2,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black26,
-                      offset: Offset(3, 3),
-                      blurRadius: 5,
-                    ),
-                  ],
+                  fontSize: 48, fontWeight: FontWeight.w900, color: Colors.orange,
+                  fontStyle: FontStyle.italic, letterSpacing: 2,
+                  shadows: [Shadow(color: Colors.black26, offset: Offset(3, 3), blurRadius: 5)],
                 ),
               ),
 
@@ -106,15 +109,10 @@ class ScoreScreen extends StatelessWidget {
                 child: Text(
                   "You've mastered this recipe! You can now view it in your Spice Journal.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF4E342E),
-                  ),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF4E342E)),
                 ),
               ),
 
-              // Tombol Replay & Share
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -125,6 +123,7 @@ class ScoreScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 30),
+              // UPDATE: Navbar gaya LevelsScreen
               _buildBottomNav(context),
               const SizedBox(height: 10),
             ],
@@ -134,48 +133,100 @@ class ScoreScreen extends StatelessWidget {
     );
   }
 
-  // LOGIKA BINTANG GEDE TANPA ERROR
+  // UPDATE: Navbar Gaya LevelsScreen (Floating, Tinggi 70)
+  Widget _buildBottomNav(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      height: 70,
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(35),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 15)]),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Home
+          IconButton(
+            icon: const Icon(Icons.home_outlined, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomepageScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+                hairStyle: hairStyle,
+              )),
+            ),
+          ),
+
+          // Play / Levels (AKTIF - Oranye)
+          IconButton(
+            icon: const Icon(Icons.play_circle_fill, color: Colors.orange, size: 35),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => LevelsScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+                hairStyle: hairStyle,
+              )),
+            ),
+          ),
+
+          // Spice Journal
+          IconButton(
+            icon: const Icon(Icons.menu_book_outlined, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => SpiceJournalScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+                hairStyle: hairStyle,
+              )),
+            ),
+          ),
+
+          // Person
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => MutualsScreen(
+                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+                hairStyle: hairStyle,
+              )),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLargeStarRow(BuildContext context, int starCount) {
     return SizedBox(
-      height: 120, // Saya kecilkan dari 170 ke 120
+      height: 120,
       width: double.infinity,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.bottomCenter,
         children: List.generate(5, (index) {
-          // --- UKURAN BARU (LEBIH KECIL) ---
-          // Tengah: 85 (tadinya 120)
-          // Samping: 65 (tadinya 90)
-          // Luar: 50 (tadinya 70)
-          double size = (index == 2)
-              ? 85
-              : (index == 1 || index == 3)
-              ? 65
-              : 50;
-
-          // Jarak antar bintang (dirapatkan sedikit)
+          double size = (index == 2) ? 85 : (index == 1 || index == 3) ? 65 : 50;
           double xOffset = (index - 2) * 55.0;
-
-          // Tinggi lengkungan (disesuaikan agar pas)
           double yOffset = 0;
           if (index == 2) yOffset = 35;
           if (index == 1 || index == 3) yOffset = 18;
 
           return Positioned(
             bottom: yOffset,
-            left:
-                (MediaQuery.of(context).size.width / 2) + xOffset - (size / 2),
+            left: (MediaQuery.of(context).size.width / 2) + xOffset - (size / 2),
             child: Opacity(
-              // Jika index bintang belum didapat, buat agak transparan
               opacity: index < starCount ? 1.0 : 0.3,
               child: SvgPicture.asset(
-                // PAKAI SvgPicture karena file kamu kemungkinan besar .svg
-                index < starCount
-                    ? 'assets/stars/SU_ICONS_01.SVG' // Pastikan ekstensinya .svg
-                    : 'assets/stars/SU_ICONS_02.SVG',
-                width: size,
-                height: size,
-                fit: BoxFit.contain,
+                index < starCount ? 'assets/stars/SU_ICONS_01.SVG' : 'assets/stars/SU_ICONS_02.SVG',
+                width: size, height: size, fit: BoxFit.contain,
               ),
             ),
           );
@@ -187,10 +238,7 @@ class ScoreScreen extends StatelessWidget {
   Widget _buildCircleButton(IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.orange, width: 3),
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.orange, width: 3)),
       child: Icon(icon, color: Colors.orange, size: 32),
     );
   }
@@ -201,69 +249,9 @@ class ScoreScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const CircleAvatar(
-            backgroundColor: Colors.white,
-            child: Icon(Icons.person, color: Colors.orange),
-          ),
-          SvgPicture.asset(
-            'assets/images/logo_dan_bg/SU_TYPEFACE.svg',
-            width: 130,
-          ),
+          const CircleAvatar(backgroundColor: Colors.white, child: Icon(Icons.person, color: Colors.orange)),
+          SvgPicture.asset('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: 130),
           const Icon(Icons.notifications, color: Colors.orange),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(35),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: InkWell(
-              onTap: () => Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LevelsScreen()),
-                (route) => false,
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade400,
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.home, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text(
-                      "Home",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 15),
-          const Icon(Icons.play_circle_fill, color: Colors.orange, size: 40),
-          const SizedBox(width: 15),
-          Icon(Icons.menu_book_rounded, color: Colors.grey.shade400, size: 28),
-          const SizedBox(width: 15),
-          Icon(Icons.person, color: Colors.grey.shade400, size: 28),
         ],
       ),
     );
