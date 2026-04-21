@@ -115,7 +115,14 @@ flutter:
     - assets/badges/SU_BADGES_02.SVG
     - assets/badges/SU_BADGES_03.SVG
     # bagian resep  
-    - assets/badges/SU_FOOD_01_MI_GOMAK.PNG
+    - assets/food/SU_FOOD_01_MI_GOMAK.PNG
+    - assets/food/SU_FOOD_01_IKAN_KUAH_KUNING.PNG
+    - assets/food/SU_FOOD_02_AYAM_TALIWANG.PNG
+    - assets/food/SU_FOOD_02_PAPEDA.PNG
+    - assets/food/SU_FOOD_02_TINUTUAN.PNG
+    - assets/food/SU_FOOD_03_ARSIK.PNG
+    - assets/food/SU_FOOD_03_AYAMBETUTU.PNG
+    - assets/food/SU_FOOD_03_COTOMAKASSAR.png
     # bagian stars
     - assets/stars/SU_ICONS_01.SVG
     - assets/stars/SU_ICONS_02.SVG

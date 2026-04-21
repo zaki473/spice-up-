@@ -33,17 +33,15 @@ class _GameplayScreenState extends State<GameplayScreen> {
         fit: BoxFit.contain,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (context, error, stackTrace) => const Icon(
-          Icons.broken_image,
-          size: 80,
-          color: Colors.grey,
-        ),
+        errorBuilder: (context, error, stackTrace) =>
+            const Icon(Icons.broken_image, size: 80, color: Colors.grey),
       );
     }
   }
 
   void _answer(int selectedIndex) {
-    if (selectedIndex == widget.resep.questions[currentIndex].correctAnswerIndex) {
+    if (selectedIndex ==
+        widget.resep.questions[currentIndex].correctAnswerIndex) {
       score += 10;
     }
 
@@ -93,7 +91,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
           child: Column(
             children: [
               _buildCustomHeader(),
-              
+
               const SizedBox(height: 10),
 
               Text(
@@ -104,7 +102,13 @@ class _GameplayScreenState extends State<GameplayScreen> {
                   fontWeight: FontWeight.w900,
                   color: Colors.orange,
                   fontStyle: FontStyle.italic,
-                  shadows: [Shadow(color: Colors.black12, blurRadius: 2, offset: Offset(2, 2))]
+                  shadows: [
+                    Shadow(
+                      color: Colors.black12,
+                      blurRadius: 2,
+                      offset: Offset(2, 2),
+                    ),
+                  ],
                 ),
               ),
 
@@ -124,13 +128,25 @@ class _GameplayScreenState extends State<GameplayScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFBCAAA4),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF8D6E63), width: 8),
-                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5))]
+                        border: Border.all(
+                          color: const Color(0xFF8D6E63),
+                          width: 8,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
                       ),
                       // Kertas Putih
                       child: Container(
                         margin: const EdgeInsets.all(6),
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 15,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(5),
@@ -146,26 +162,45 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                 color: Color(0xFF4E342E),
                               ),
                             ),
-                            const Divider(color: Colors.orange, thickness: 2, height: 12),
-                            
+                            const Divider(
+                              color: Colors.orange,
+                              thickness: 2,
+                              height: 12,
+                            ),
+
                             // AREA GAMBAR: Sekarang sangat luas karena tombol dikecilkan dan panah dihapus
                             Expanded(
                               child: Container(
                                 width: double.infinity,
                                 alignment: Alignment.center,
-                                child: _buildQuizImage(currentQuestion.imagePath ?? widget.resep.imagePath),
+                                child: _buildQuizImage(
+                                  currentQuestion.imagePath ??
+                                      widget.resep.imagePath,
+                                ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 5),
-                            const Row(
+                            // ... di dalam Column pada GameplayScreen
+                            Row(
                               children: [
-                                Text("????", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orange)),
-                                SizedBox(width: 8),
+                                const Text(
+                                  "????",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    "HINT: Perhatikan tekstur dan warna pada gambar!",
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54),
+                                    "HINT: ${currentQuestion.hint ?? 'Perhatikan tekstur dan warna pada gambar!'}",
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black54,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -183,12 +218,22 @@ class _GameplayScreenState extends State<GameplayScreen> {
                         decoration: BoxDecoration(
                           color: const Color(0xFFD84315),
                           borderRadius: BorderRadius.circular(12),
-                          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))]
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: Container(
-                            width: 16, height: 16,
-                            decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
+                            width: 16,
+                            height: 16,
+                            decoration: const BoxDecoration(
+                              color: Colors.black38,
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
                       ),
@@ -207,7 +252,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
                     crossAxisCount: 2,
                     mainAxisSpacing: 10,
                     crossAxisSpacing: 10,
-                    childAspectRatio: 3.2, // Nilai 3.2 membuat tombol lebih gepeng/tipis
+                    childAspectRatio:
+                        3.2, // Nilai 3.2 membuat tombol lebih gepeng/tipis
                   ),
                   itemCount: currentQuestion.options.length,
                   itemBuilder: (context, index) {
@@ -221,13 +267,23 @@ class _GameplayScreenState extends State<GameplayScreen> {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                           ),
-                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 3))],
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 4,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: Text(
                             currentQuestion.options[index],
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
@@ -253,11 +309,17 @@ class _GameplayScreenState extends State<GameplayScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const CircleAvatar(backgroundColor: Colors.white, child: Icon(Icons.person, color: Colors.orange)),
+          const CircleAvatar(
+            backgroundColor: Colors.white,
+            child: Icon(Icons.person, color: Colors.orange),
+          ),
           SvgPicture.asset(
-            'assets/images/logo_dan_bg/SU_TYPEFACE.svg', 
+            'assets/images/logo_dan_bg/SU_TYPEFACE.svg',
             width: 80,
-            placeholderBuilder: (context) => const Text("SpiceUp!", style: TextStyle(fontWeight: FontWeight.bold)),
+            placeholderBuilder: (context) => const Text(
+              "SpiceUp!",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           const Icon(Icons.notifications, color: Colors.redAccent),
         ],
@@ -269,25 +331,37 @@ class _GameplayScreenState extends State<GameplayScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 15),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+      ),
       child: Row(
         children: [
           Expanded(
             child: GestureDetector(
               onTap: () => Navigator.pushAndRemoveUntil(
-                context, 
-                MaterialPageRoute(builder: (context) => const LevelsScreen()), 
-                (route) => false
+                context,
+                MaterialPageRoute(builder: (context) => const LevelsScreen()),
+                (route) => false,
               ),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.home, color: Colors.white, size: 20),
                     SizedBox(width: 5),
-                    Text("Home", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    Text(
+                      "Home",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),

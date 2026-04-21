@@ -7,12 +7,14 @@ class Question {
   final List<String> options;
   final int correctAnswerIndex;
   final String? imagePath;
+  final String? hint;
 
   Question({
     required this.text,
     required this.options,
     required this.correctAnswerIndex,
     this.imagePath,
+    this.hint,
   });
 }
 
