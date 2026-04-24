@@ -3,9 +3,9 @@ import '../constants/app_colors.dart';
 import 'homepage_screen.dart';
 import 'levels_screen.dart';
 import 'spice_journal_screen.dart';
+import 'profile_screen.dart'; // <--- PASTIKAN IMPORT INI ADA
 
 class MutualsScreen extends StatelessWidget {
-  // Parameter avatar agar data karakter tetap terjaga
   final String skinPath;
   final String eyePath;
   final String mouthPath;
@@ -43,7 +43,7 @@ class MutualsScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              _buildHeader(),
+              _buildHeader(context), // <--- Tambahkan context di sini
               _buildSearchBar(),
               _buildCategoryLabel("Friends"),
               Expanded(
@@ -57,7 +57,7 @@ class MutualsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              _buildBottomNav(context), // Navbar gaya baru
+              _buildBottomNav(context),
             ],
           ),
         ),
@@ -65,15 +65,40 @@ class MutualsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
-    return const Padding(
-      padding: EdgeInsets.all(16),
+  // UPDATE: Tambahkan Parameter BuildContext agar bisa navigasi
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          CircleAvatar(radius: 18, backgroundColor: Colors.white, child: Icon(Icons.person, size: 20, color: Colors.grey)),
-          Text("Spice Up!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          Icon(Icons.notifications, color: Colors.red),
+          // KLIK AVATAR KE PROFILE
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfileSettingPage(
+                  skinPath: skinPath,
+                  eyePath: eyePath,
+                  mouthPath: mouthPath,
+                  nosePath: nosePath,
+                  browsPath: browsPath,
+                  hairPath: hairPath,
+                  bangsPath: bangsPath,
+                  shirtPath: shirtPath,
+                  shirtColor: shirtColor,
+                  hairStyle: hairStyle,
+                )),
+              );
+            },
+            child: const CircleAvatar(
+              radius: 18, 
+              backgroundColor: Colors.white, 
+              child: Icon(Icons.person, size: 20, color: Colors.grey)
+            ),
+          ),
+          const Text("Spice Up!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const Icon(Icons.notifications, color: Colors.red),
         ],
       ),
     );
@@ -144,10 +169,9 @@ class MutualsScreen extends StatelessWidget {
     );
   }
 
-  // UPDATE: Navbar Gaya LevelsScreen
   Widget _buildBottomNav(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20), // Floating margin
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       height: 70,
       decoration: BoxDecoration(
           color: Colors.white,
@@ -156,7 +180,6 @@ class MutualsScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Home
           IconButton(
             icon: const Icon(Icons.home_outlined, color: Colors.grey, size: 30),
             onPressed: () => Navigator.pushReplacement(
@@ -169,8 +192,6 @@ class MutualsScreen extends StatelessWidget {
               )),
             ),
           ),
-
-          // Levels / Play
           IconButton(
             icon: const Icon(Icons.play_circle_outline, color: Colors.grey, size: 30),
             onPressed: () => Navigator.pushReplacement(
@@ -183,8 +204,6 @@ class MutualsScreen extends StatelessWidget {
               )),
             ),
           ),
-
-          // Spice Journal
           IconButton(
             icon: const Icon(Icons.menu_book_outlined, color: Colors.grey, size: 30),
             onPressed: () => Navigator.pushReplacement(
@@ -197,9 +216,28 @@ class MutualsScreen extends StatelessWidget {
               )),
             ),
           ),
-
-          // Person / Profile (AKTIF - Oranye)
-          const Icon(Icons.person, color: Colors.orange, size: 35),
+          
+          // ICON PROFILE DI NAV BAWAH (Sekarang bisa diklik juga)
+          IconButton(
+            icon: const Icon(Icons.person, color: Colors.orange, size: 35),
+            onPressed: () {
+              Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (context) => ProfileSettingPage(
+                  skinPath: skinPath,
+                  eyePath: eyePath,
+                  mouthPath: mouthPath,
+                  nosePath: nosePath,
+                  browsPath: browsPath,
+                  hairPath: hairPath,
+                  bangsPath: bangsPath,
+                  shirtPath: shirtPath,
+                  shirtColor: shirtColor,
+                  hairStyle: hairStyle,
+                ))
+              );
+            },
+          ),
         ],
       ),
     );

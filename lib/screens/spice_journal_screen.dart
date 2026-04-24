@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import 'homepage_screen.dart';
 import 'levels_screen.dart';
 import 'mutuals_screen.dart';
+import 'profile_screen.dart';
 
 // Model Data untuk Bumbu
 class SpiceInfo {
@@ -313,14 +314,41 @@ class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
   // --- WIDGET PENDUKUNG ---
 
   Widget _buildHeader() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          CircleAvatar(radius: 18, backgroundColor: Colors.white, child: Icon(Icons.person, size: 20, color: Colors.grey)),
-          Text("Spice Up!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          Icon(Icons.notifications, color: Colors.red),
+          // Tambahkan GestureDetector di sini
+          GestureDetector(
+            onTap: () {
+              // Navigasi ke halaman profile
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProfileSettingPage(
+                    skinPath: widget.skinPath,
+                    eyePath: widget.eyePath,
+                    mouthPath: widget.mouthPath,
+                    nosePath: widget.nosePath,
+                    browsPath: widget.browsPath,
+                    hairPath: widget.hairPath,
+                    bangsPath: widget.bangsPath,
+                    shirtPath: widget.shirtPath,
+                    shirtColor: widget.shirtColor,
+                    hairStyle: widget.hairStyle,
+                  ),
+                ),
+              );
+            },
+            child: const CircleAvatar(
+              radius: 18, 
+              backgroundColor: Colors.white, 
+              child: Icon(Icons.person, size: 20, color: Colors.grey),
+            ),
+          ),
+          const Text("Spice Up!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const Icon(Icons.notifications, color: Colors.red),
         ],
       ),
     );

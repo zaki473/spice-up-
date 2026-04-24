@@ -5,6 +5,7 @@ import 'levels_screen.dart';
 import 'multiplayer_score_screen.dart';
 import 'mutuals_screen.dart';
 import 'spice_journal_screen.dart';
+import 'profile_screen.dart'; // Pastikan import ini ada
 
 class HomepageScreen extends StatelessWidget {
   final String skinPath;
@@ -31,6 +32,27 @@ class HomepageScreen extends StatelessWidget {
     required this.shirtColor,
     required this.hairStyle,
   });
+
+  // Fungsi navigasi agar kode lebih bersih
+  void _goToProfile(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileSettingPage(
+          skinPath: skinPath,
+          eyePath: eyePath,
+          mouthPath: mouthPath,
+          nosePath: nosePath,
+          browsPath: browsPath,
+          hairPath: hairPath,
+          bangsPath: bangsPath,
+          shirtPath: shirtPath,
+          shirtColor: shirtColor,
+          hairStyle: hairStyle,
+        ),
+      ),
+    );
+  }
 
   Widget _renderPart(String path, double size) {
     if (path.toLowerCase().endsWith('.svg')) {
@@ -67,10 +89,18 @@ class HomepageScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(children: const [
-                                CircleAvatar(backgroundColor: Colors.black, radius: 16, child: Icon(Icons.person, color: Colors.white, size: 20)),
-                                SizedBox(width: 8),
-                                Text('Hi, Anggun!', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white))
+                              Row(children: [
+                                // 1. PROFIL BULAT BISA DIKLIK
+                                InkWell(
+                                  onTap: () => _goToProfile(context),
+                                  child: const CircleAvatar(
+                                    backgroundColor: Colors.black, 
+                                    radius: 16, 
+                                    child: Icon(Icons.person, color: Colors.white, size: 20)
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text('Hi, Anggun!', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white))
                               ]),
                               const Icon(Icons.notifications, color: AppColors.orangePrimary),
                             ],
@@ -88,55 +118,60 @@ class HomepageScreen extends StatelessWidget {
                   // --- PROFILE CARD ---
                   Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.orangeLight, width: 2),
-                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 80, height: 100,
-                            decoration: BoxDecoration(color: Colors.orange.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  _renderPart(skinPath, 70),
-                                  Positioned(top: 30, child: _renderPart(browsPath, 35)),
-                                  Positioned(top: 35, child: _renderPart(eyePath, 40)),
-                                  Positioned(top: 50, child: _renderPart(nosePath, 10)),
-                                  Positioned(top: 58, child: _renderPart(mouthPath, 15)),
-                                  Positioned(top: 5, child: _renderPart(hairPath, 70)),
-                                  Positioned(top: 10, child: _renderPart(bangsPath, 60)),
-                                  Positioned(bottom: -5, child: _renderPart(shirtPath, 70)),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('ANGGUN', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.orangePrimary)),
-                                const Text('Anggun Natasha Simanjuntak', style: TextStyle(fontSize: 10)),
-                                const Divider(color: Colors.grey),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: InkWell(
+                      // 2. KARTU PROFIL BISA DIKLIK
+                      onTap: () => _goToProfile(context),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.orangeLight, width: 2),
+                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 80, height: 100,
+                              decoration: BoxDecoration(color: Colors.orange.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Stack(
+                                  alignment: Alignment.center,
                                   children: [
-                                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('School', style: TextStyle(fontSize: 8, color: Colors.grey)), Text('SMK Kota Blitar 1', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold))]),
-                                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('Birthday', style: TextStyle(fontSize: 8, color: Colors.grey)), Text('23/DEC/2006', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold))]),
+                                    _renderPart(skinPath, 70),
+                                    Positioned(top: 30, child: _renderPart(browsPath, 35)),
+                                    Positioned(top: 35, child: _renderPart(eyePath, 40)),
+                                    Positioned(top: 50, child: _renderPart(nosePath, 10)),
+                                    Positioned(top: 58, child: _renderPart(mouthPath, 15)),
+                                    Positioned(top: 5, child: _renderPart(hairPath, 70)),
+                                    Positioned(top: 10, child: _renderPart(bangsPath, 60)),
+                                    Positioned(bottom: -5, child: _renderPart(shirtPath, 70)),
                                   ],
                                 ),
-                              ],
+                              ),
                             ),
-                          )
-                        ],
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('ANGGUN', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.orangePrimary)),
+                                  const Text('Anggun Natasha Simanjuntak', style: TextStyle(fontSize: 10)),
+                                  const Divider(color: Colors.grey),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('School', style: TextStyle(fontSize: 8, color: Colors.grey)), Text('SMK Kota Blitar 1', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold))]),
+                                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('Birthday', style: TextStyle(fontSize: 8, color: Colors.grey)), Text('23/DEC/2006', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold))]),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            )
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -171,11 +206,11 @@ class HomepageScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 100), // Memberi ruang untuk Navbar melayang
+                  const SizedBox(height: 100), 
                 ],
               ),
 
-              // --- BOTTOM NAVIGATION BAR (Gaya Levels) ---
+              // --- BOTTOM NAVIGATION BAR ---
               Align(
                 alignment: Alignment.bottomCenter,
                 child: _buildBottomNav(context),
@@ -187,10 +222,9 @@ class HomepageScreen extends StatelessWidget {
     );
   }
 
-  // Fungsi Navbar yang sudah diupdate sesuai gaya LevelsScreen
   Widget _buildBottomNav(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20), // Melayang seperti Levels
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       height: 70,
       decoration: BoxDecoration(
           color: Colors.white,
@@ -199,10 +233,7 @@ class HomepageScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // HOME (Aktif)
           const Icon(Icons.home_filled, color: Colors.orange, size: 30),
-          
-          // PLAY / LEVELS (Gunakan pushReplacement agar stack rapi)
           IconButton(
             icon: const Icon(Icons.play_circle_outline, color: Colors.grey, size: 30), 
             onPressed: () => Navigator.pushReplacement(
@@ -215,8 +246,6 @@ class HomepageScreen extends StatelessWidget {
               ))
             )
           ),
-
-          // SPICE JOURNAL
           IconButton(
             icon: const Icon(Icons.menu_book, color: Colors.grey, size: 30), 
             onPressed: () => Navigator.pushReplacement(
@@ -229,8 +258,6 @@ class HomepageScreen extends StatelessWidget {
               ))
             )
           ),
-
-          // MUTUALS / PROFILE
           IconButton(
             icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30), 
             onPressed: () => Navigator.pushReplacement(
@@ -268,9 +295,9 @@ class HomepageScreen extends StatelessWidget {
             Expanded(
               child: Container(
                 margin: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  color: const Color(0xFFFFEBD2), 
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  color: Color(0xFFFFEBD2), 
                 ),
                 child: Center(
                   child: Padding(

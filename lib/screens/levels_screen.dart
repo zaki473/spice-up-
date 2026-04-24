@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/recipe_model.dart';
 import '../data/recipe_data.dart';
-import '../constants/app_colors.dart'; // Pastikan import ini ada
+import '../constants/app_colors.dart';
 import 'gameplay_screen.dart';
-import 'homepage_screen.dart'; // Import halaman tujuan
+import 'homepage_screen.dart';
 import 'spice_journal_screen.dart';
 import 'mutuals_screen.dart';
+import 'profile_screen.dart'; // 1. Pastikan ini diimport
 
 class LevelsScreen extends StatefulWidget {
-  // Tambahkan parameter avatar agar bisa dipassing kembali ke Homepage
   final String skinPath;
   final String eyePath;
   final String mouthPath;
@@ -23,7 +23,7 @@ class LevelsScreen extends StatefulWidget {
 
   const LevelsScreen({
     super.key,
-    this.skinPath = 'assets/images/avatar/skin/SKIN_01.svg', // Default value jika perlu
+    this.skinPath = 'assets/images/avatar/skin/SKIN_01.svg',
     this.eyePath = 'assets/images/avatar/eyes/EYE_01.svg',
     this.mouthPath = 'assets/images/avatar/mouth/MOUTH_01.svg',
     this.nosePath = 'assets/images/avatar/nose/NOSE_01.svg',
@@ -41,6 +41,27 @@ class LevelsScreen extends StatefulWidget {
 
 class _LevelsScreenState extends State<LevelsScreen> {
   
+  // 2. Fungsi pembantu untuk navigasi ke Profile
+  void _goToProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileSettingPage(
+          skinPath: widget.skinPath,
+          eyePath: widget.eyePath,
+          mouthPath: widget.mouthPath,
+          nosePath: widget.nosePath,
+          browsPath: widget.browsPath,
+          hairPath: widget.hairPath,
+          bangsPath: widget.bangsPath,
+          shirtPath: widget.shirtPath,
+          shirtColor: widget.shirtColor,
+          hairStyle: widget.hairStyle,
+        ),
+      ),
+    );
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -265,7 +286,15 @@ class _LevelsScreenState extends State<LevelsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const CircleAvatar(radius: 22, backgroundColor: Colors.white, child: Icon(Icons.person, color: Colors.orange)),
+          // 3. CircleAvatar sekarang bisa diklik menuju profile
+          InkWell(
+            onTap: _goToProfile,
+            child: const CircleAvatar(
+              radius: 22, 
+              backgroundColor: Colors.white, 
+              child: Icon(Icons.person, color: Colors.orange)
+            ),
+          ),
           _optimizedSvg('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: 100),
           const Icon(Icons.notifications_none, color: Color(0xFF4E342E)),
         ],
@@ -284,7 +313,6 @@ class _LevelsScreenState extends State<LevelsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Navigasi ke Home
           IconButton(
             icon: const Icon(Icons.home_filled, color: Colors.grey, size: 30),
             onPressed: () => Navigator.pushReplacement(
@@ -303,11 +331,7 @@ class _LevelsScreenState extends State<LevelsScreen> {
               )),
             ),
           ),
-          
-          // Play (Halaman Sekarang - beri warna orange)
           const Icon(Icons.play_circle_filled, color: Colors.orange, size: 30),
-
-          // Navigasi ke Journal
           IconButton(
             icon: const Icon(Icons.menu_book, color: Colors.grey, size: 30),
             onPressed: () => Navigator.pushReplacement(
@@ -315,8 +339,6 @@ class _LevelsScreenState extends State<LevelsScreen> {
               MaterialPageRoute(builder: (context) => const SpiceJournalScreen()),
             ),
           ),
-
-          // Navigasi ke Profile / Mutuals
           IconButton(
             icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30),
             onPressed: () => Navigator.pushReplacement(
