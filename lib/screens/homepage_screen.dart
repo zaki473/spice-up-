@@ -94,13 +94,11 @@ class HomepageScreen extends StatelessWidget {
                                 InkWell(
                                   onTap: () => _goToProfile(context),
                                   child: const CircleAvatar(
-                                    backgroundColor: Colors.black, 
-                                    radius: 16, 
-                                    child: Icon(Icons.person, color: Colors.white, size: 20)
+                                    radius: 18, 
+                                    backgroundColor: Colors.white, 
+                                    child: Icon(Icons.person, size: 20, color: Colors.grey)
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                const Text('Hi, Anggun!', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white))
                               ]),
                               const Icon(Icons.notifications, color: AppColors.orangePrimary),
                             ],

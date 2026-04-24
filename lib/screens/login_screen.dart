@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../constants/app_colors.dart';
 import 'customization_screen.dart';
+import 'forgot_password_screen.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,7 +29,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const CharacterCustomizationScreen()),
+        MaterialPageRoute(
+          builder: (context) => const CharacterCustomizationScreen(),
+        ),
       );
     }
   }
@@ -71,12 +75,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 40,
+                      ),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           children: [
-                            const Text('Welcome', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                            const Text(
+                              'Welcome',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textDark,
+                              ),
+                            ),
                             const SizedBox(height: 30),
 
                             // Input Name
@@ -84,9 +98,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _nameController,
                               decoration: const InputDecoration(
                                 labelText: 'Name',
-                                prefixIcon: Icon(Icons.person_outline, color: AppColors.orangePrimary),
+                                prefixIcon: Icon(
+                                  Icons.person_outline,
+                                  color: AppColors.orangePrimary,
+                                ),
                               ),
-                              validator: (value) => value!.isEmpty ? 'Name cannot be empty' : null,
+                              validator: (value) => value!.isEmpty
+                                  ? 'Name cannot be empty'
+                                  : null,
                             ),
                             const SizedBox(height: 20),
 
@@ -96,43 +115,112 @@ class _LoginScreenState extends State<LoginScreen> {
                               obscureText: _obscureText,
                               decoration: InputDecoration(
                                 labelText: 'Password',
-                                prefixIcon: const Icon(Icons.lock_outline, color: AppColors.orangePrimary),
+                                prefixIcon: const Icon(
+                                  Icons.lock_outline,
+                                  color: AppColors.orangePrimary,
+                                ),
                                 suffixIcon: IconButton(
-                                  icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
-                                  onPressed: () => setState(() => _obscureText = !_obscureText),
+                                  icon: Icon(
+                                    _obscureText
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: Colors.grey,
+                                  ),
+                                  onPressed: () => setState(
+                                    () => _obscureText = !_obscureText,
+                                  ),
                                 ),
                               ),
-                              validator: (value) => value!.length < 6 ? 'Password too short' : null,
+                              validator: (value) => value!.length < 6
+                                  ? 'Password too short'
+                                  : null,
                             ),
 
                             Align(
                               alignment: Alignment.centerRight,
-                              child: TextButton(onPressed: () {}, child: const Text('Forget Password?', style: TextStyle(color: Colors.grey))),
+                              child: TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ForgotPasswordScreen(),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  'Forget Password?',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
                             ),
-                            const SizedBox(height: 20),
 
                             // Tombol Log In
                             GestureDetector(
                               onTap: _handleLogin,
                               child: Container(
-                                width: 220, height: 50,
+                                width: 220,
+                                height: 50,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(25),
-                                  gradient: const LinearGradient(colors: [AppColors.orangeLight, AppColors.orangePrimary]),
-                                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))],
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      AppColors.orangeLight,
+                                      AppColors.orangePrimary,
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
-                                child: const Center(child: Text('Log In', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+                                child: const Center(
+                                  child: Text(
+                                    'Log In',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 30),
 
                             // Tombol Create Account
                             SizedBox(
-                              width: double.infinity, height: 50,
+                              width: double.infinity,
+                              height: 50,
                               child: OutlinedButton(
-                                onPressed: () {},
-                                style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.orangePrimary), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
-                                child: const Text('Create Account', style: TextStyle(color: AppColors.orangePrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const RegisterScreen(),
+                                    ),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(
+                                    color: AppColors.orangePrimary,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Create Account',
+                                  style: TextStyle(
+                                    color: AppColors.orangePrimary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
                           ],

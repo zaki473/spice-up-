@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../constants/app_colors.dart';
 import 'homepage_screen.dart';
 import 'levels_screen.dart';
@@ -347,7 +348,11 @@ class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
               child: Icon(Icons.person, size: 20, color: Colors.grey),
             ),
           ),
-          const Text("Spice Up!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          SvgPicture.asset(
+            'assets/images/logo_dan_bg/SU_TYPEFACE.svg',
+                width: 100, 
+                fit: BoxFit.contain,
+          ),
           const Icon(Icons.notifications, color: Colors.red),
         ],
       ),

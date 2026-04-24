@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:share_plus/share_plus.dart'; // Import package share
 import '../models/recipe_model.dart';
 import 'levels_screen.dart';
 import 'homepage_screen.dart';
 import 'spice_journal_screen.dart';
 import 'mutuals_screen.dart';
+import 'gameplay_screen.dart'; 
+import 'profile_screen.dart';
 
 class ScoreScreen extends StatelessWidget {
   final int score;
   final Recipe resep;
 
-  // Tambahkan parameter avatar agar data tetap terjaga saat ke Home
+  // Data Avatar agar tidak hilang saat berpindah halaman
   final String skinPath;
   final String eyePath;
   final String mouthPath;
@@ -38,6 +41,12 @@ class ScoreScreen extends StatelessWidget {
     this.hairStyle = Icons.person,
   });
 
+  // FUNGSI SHARE JAWABAN
+  void _shareScore() {
+    final String text = "Hooray! I just finished ${resep.title} in SpiceUp! and got $score points! 🍳✨";
+    Share.share(text);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,7 +62,7 @@ class ScoreScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              _buildHeader(),
+              _buildHeader(context),
 
               // Tombol Back menuju Levels
               Padding(
@@ -76,9 +85,13 @@ class ScoreScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 10),
+              
+              // Barisan Bintang Besar
               _buildLargeStarRow(context, resep.stars),
 
               const SizedBox(height: 20),
+              
+              // Gambar Resep di dalam Glow
               Expanded(
                 child: Stack(
                   alignment: Alignment.center,
@@ -87,9 +100,16 @@ class ScoreScreen extends StatelessWidget {
                       width: 280, height: 280,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.white.withOpacity(0.5), blurRadius: 50, spreadRadius: 20)],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.5), 
+                            blurRadius: 50, 
+                            spreadRadius: 20
+                          )
+                        ],
                       ),
                     ),
+                    // Jika path gambar resep menggunakan asset image biasa
                     Image.asset(resep.imagePath, width: 250, fit: BoxFit.contain),
                   ],
                 ),
@@ -98,32 +118,50 @@ class ScoreScreen extends StatelessWidget {
               const Text(
                 "GOOD JOB!",
                 style: TextStyle(
-                  fontSize: 48, fontWeight: FontWeight.w900, color: Colors.orange,
-                  fontStyle: FontStyle.italic, letterSpacing: 2,
+                  fontSize: 48, 
+                  fontWeight: FontWeight.w900, 
+                  color: Colors.orange,
+                  fontStyle: FontStyle.italic, 
+                  letterSpacing: 2,
                   shadows: [Shadow(color: Colors.black26, offset: Offset(3, 3), blurRadius: 5)],
                 ),
               ),
 
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
                 child: Text(
-                  "You've mastered this recipe! You can now view it in your Spice Journal.",
+                  "You've mastered ${resep.title}! You can now view it in your Spice Journal.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF4E342E)),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF4E342E)),
                 ),
               ),
 
+              const SizedBox(height: 10),
+
+              // TOMBOL REPLAY DAN SHARE
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildCircleButton(Icons.replay_rounded),
-                  const SizedBox(width: 20),
-                  _buildCircleButton(Icons.share_rounded),
+                  _buildCircleActionButton(
+                    icon: Icons.replay_rounded, 
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => GameplayScreen(resep: resep)),
+                      );
+                    }
+                  ),
+                  const SizedBox(width: 30),
+                  _buildCircleActionButton(
+                    icon: Icons.share_rounded, 
+                    onTap: _shareScore
+                  ),
                 ],
               ),
 
               const SizedBox(height: 30),
-              // UPDATE: Navbar gaya LevelsScreen
+              
+              // Bottom Navigation bar
               _buildBottomNav(context),
               const SizedBox(height: 10),
             ],
@@ -133,78 +171,56 @@ class ScoreScreen extends StatelessWidget {
     );
   }
 
-  // UPDATE: Navbar Gaya LevelsScreen (Floating, Tinggi 70)
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      height: 70,
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(35),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 15)]),
+  // Widget Button Bulat
+  Widget _buildCircleActionButton({required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          shape: BoxShape.circle, 
+          border: Border.all(color: Colors.orange, width: 3),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 3))]
+        ),
+        child: Icon(icon, color: Colors.orange, size: 35),
+      ),
+    );
+  }
+
+  // Header dengan link ke Profile
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Home
-          IconButton(
-            icon: const Icon(Icons.home_outlined, color: Colors.grey, size: 30),
-            onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => HomepageScreen(
-                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
-                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
-                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
-                hairStyle: hairStyle,
-              )),
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileSettingPage(
+              skinPath: 'assets/images/skin/SU_AVATAR_SKIN01.svg',
+              eyePath: 'assets/images/eye/SU_AVATAR_EYE1.svg',
+              mouthPath: 'assets/images/mouth/SU_AVATAR_MOUTH1.svg',
+              nosePath: 'assets/images/nose/SU_AVATAR_NOSE1.svg',
+              browsPath: 'assets/images/brows/SU_AVATAR_BROWS1.svg',
+              hairPath: 'assets/images/hair/SU_AVATAR_HAIR1.png',
+              bangsPath: 'assets/images/bangs/SU_AVATAR_BANGS1.svg',
+              shirtPath: 'assets/images/top/SU_AVATAR_TOP1.png',
+              shirtColor: Colors.orange,
+              hairStyle: Icons.person,
+            ))),
+            child: const CircleAvatar(
+              backgroundColor: Colors.white, 
+              child: Icon(Icons.person, color: Colors.orange)
             ),
           ),
-
-          // Play / Levels (AKTIF - Oranye)
-          IconButton(
-            icon: const Icon(Icons.play_circle_fill, color: Colors.orange, size: 35),
-            onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => LevelsScreen(
-                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
-                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
-                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
-                hairStyle: hairStyle,
-              )),
-            ),
-          ),
-
-          // Spice Journal
-          IconButton(
-            icon: const Icon(Icons.menu_book_outlined, color: Colors.grey, size: 30),
-            onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => SpiceJournalScreen(
-                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
-                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
-                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
-                hairStyle: hairStyle,
-              )),
-            ),
-          ),
-
-          // Person
-          IconButton(
-            icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30),
-            onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => MutualsScreen(
-                skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
-                nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
-                bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
-                hairStyle: hairStyle,
-              )),
-            ),
-          ),
+          SvgPicture.asset('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: 110),
+          const Icon(Icons.notifications, color: Colors.orange),
         ],
       ),
     );
   }
 
+  // Widget Bintang melengkung
   Widget _buildLargeStarRow(BuildContext context, int starCount) {
     return SizedBox(
       height: 120,
@@ -235,23 +251,54 @@ class ScoreScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCircleButton(IconData icon) {
+  // Floating Bottom Navigation
+  Widget _buildBottomNav(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.orange, width: 3)),
-      child: Icon(icon, color: Colors.orange, size: 32),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      height: 70,
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(35),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 15)]),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          const CircleAvatar(backgroundColor: Colors.white, child: Icon(Icons.person, color: Colors.orange)),
-          SvgPicture.asset('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: 130),
-          const Icon(Icons.notifications, color: Colors.orange),
+          IconButton(
+            icon: const Icon(Icons.home_outlined, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomepageScreen(
+              skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+              nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+              bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+              hairStyle: hairStyle,
+            ))),
+          ),
+          IconButton(
+            icon: const Icon(Icons.play_circle_fill, color: Colors.orange, size: 38),
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LevelsScreen(
+              skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+              nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+              bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+              hairStyle: hairStyle,
+            ))),
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu_book_outlined, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SpiceJournalScreen(
+              skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+              nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+              bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+              hairStyle: hairStyle,
+            ))),
+          ),
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30),
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MutualsScreen(
+              skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+              nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+              bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+              hairStyle: hairStyle,
+            ))),
+          ),
         ],
       ),
     );

@@ -296,7 +296,7 @@ class _LevelsScreenState extends State<LevelsScreen> {
             ),
           ),
           _optimizedSvg('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: 100),
-          const Icon(Icons.notifications_none, color: Color(0xFF4E342E)),
+          const Icon(Icons.notifications, color: AppColors.orangePrimary),
         ],
       ),
     );
