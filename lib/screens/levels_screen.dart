@@ -7,7 +7,7 @@ import 'gameplay_screen.dart';
 import 'homepage_screen.dart';
 import 'spice_journal_screen.dart';
 import 'mutuals_screen.dart';
-import 'profile_screen.dart'; // 1. Pastikan ini diimport
+import 'profile_screen.dart';
 
 class LevelsScreen extends StatefulWidget {
   final String skinPath;
@@ -41,7 +41,6 @@ class LevelsScreen extends StatefulWidget {
 
 class _LevelsScreenState extends State<LevelsScreen> {
   
-  // 2. Fungsi pembantu untuk navigasi ke Profile
   void _goToProfile() {
     Navigator.push(
       context,
@@ -78,11 +77,14 @@ class _LevelsScreenState extends State<LevelsScreen> {
         ),
       );
 
-  Widget _optimizedImage(String path, {double width = 70}) {
+  // MODIFIKASI: Menambahkan parameter BoxFit fit
+  Widget _optimizedImage(String path, {double? width, double? height, BoxFit fit = BoxFit.contain}) {
     return Image.asset(
       path,
       width: width,
-      cacheWidth: (width * MediaQuery.of(context).devicePixelRatio).round(),
+      height: height,
+      fit: fit, // Digunakan agar bisa BoxFit.cover
+      cacheWidth: width != null ? (width * MediaQuery.of(context).devicePixelRatio).round() : null,
       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
         if (wasSynchronouslyLoaded) return child;
         return AnimatedOpacity(
@@ -212,6 +214,7 @@ class _LevelsScreenState extends State<LevelsScreen> {
     );
   }
 
+  // MODIFIKASI UTAMA PADA KARTU LEVEL (SUPAYA PRESISI)
   Widget _buildLevelCard(BuildContext context, Recipe resep, bool isLocked) {
     return GestureDetector(
       onTap: !isLocked
@@ -231,16 +234,23 @@ class _LevelsScreenState extends State<LevelsScreen> {
           ),
           child: Row(
             children: [
+              // BAGIAN GAMBAR YANG DIPRESISI
               Container(
                 width: 105,
                 decoration: BoxDecoration(
                   color: isLocked ? Colors.grey.shade300 : resep.sunburstColor,
                   borderRadius: const BorderRadius.horizontal(left: Radius.circular(25)),
                 ),
-                child: Center(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(25)),
                   child: isLocked
                       ? const Icon(Icons.lock_rounded, size: 40, color: Colors.white)
-                      : _optimizedImage(resep.imagePath, width: 70), 
+                      : _optimizedImage(
+                          resep.imagePath, 
+                          width: 105, 
+                          height: 115, 
+                          fit: BoxFit.cover // GAMBAR SEKARANG MEMENUHI KOTAK
+                        ), 
                 ),
               ),
               Expanded(
@@ -286,7 +296,6 @@ class _LevelsScreenState extends State<LevelsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // 3. CircleAvatar sekarang bisa diklik menuju profile
           InkWell(
             onTap: _goToProfile,
             child: const CircleAvatar(
@@ -336,14 +345,36 @@ class _LevelsScreenState extends State<LevelsScreen> {
             icon: const Icon(Icons.menu_book, color: Colors.grey, size: 30),
             onPressed: () => Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const SpiceJournalScreen()),
+              MaterialPageRoute(builder: (context) => SpiceJournalScreen(
+                skinPath: widget.skinPath,
+                eyePath: widget.eyePath,
+                mouthPath: widget.mouthPath,
+                nosePath: widget.nosePath,
+                browsPath: widget.browsPath,
+                hairPath: widget.hairPath,
+                bangsPath: widget.bangsPath,
+                shirtPath: widget.shirtPath,
+                shirtColor: widget.shirtColor,
+                hairStyle: widget.hairStyle,
+              )),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30),
             onPressed: () => Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const MutualsScreen()),
+              MaterialPageRoute(builder: (context) => MutualsScreen(
+                skinPath: widget.skinPath,
+                eyePath: widget.eyePath,
+                mouthPath: widget.mouthPath,
+                nosePath: widget.nosePath,
+                browsPath: widget.browsPath,
+                hairPath: widget.hairPath,
+                bangsPath: widget.bangsPath,
+                shirtPath: widget.shirtPath,
+                shirtColor: widget.shirtColor,
+                hairStyle: widget.hairStyle,
+              )),
             ),
           ),
         ],
