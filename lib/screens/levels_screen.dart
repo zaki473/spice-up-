@@ -6,7 +6,7 @@ import '../constants/app_colors.dart';
 import 'gameplay_screen.dart';
 import 'homepage_screen.dart';
 import 'spice_journal_screen.dart';
-import 'mutuals_screen.dart';
+import 'multiplayer_lobby_screen.dart';
 import 'profile_screen.dart';
 
 class LevelsScreen extends StatefulWidget {
@@ -61,13 +61,7 @@ class _LevelsScreenState extends State<LevelsScreen> {
     );
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    for (var resep in listResep) {
-      precacheImage(AssetImage(resep.imagePath), context);
-    }
-  }
+
 
   Widget _loader() => const Center(
         child: SizedBox(
@@ -124,7 +118,6 @@ class _LevelsScreenState extends State<LevelsScreen> {
               _buildHeader(),
               Expanded(
                 child: ListView.builder(
-                  cacheExtent: 500, 
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   itemCount: listResep.length,
                   itemBuilder: (context, index) {
@@ -146,28 +139,26 @@ class _LevelsScreenState extends State<LevelsScreen> {
                       }
                     }
 
-                    return IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 75,
-                            child: Stack(
-                              alignment: Alignment.topCenter,
-                              children: [
-                                _buildDashedLine(index, isLocked),
-                                if (badge != null) badge,
-                              ],
-                            ),
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 75,
+                          child: Stack(
+                            alignment: Alignment.topCenter,
+                            children: [
+                              _buildDashedLine(index, isLocked),
+                              if (badge != null) badge,
+                            ],
                           ),
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(top: badge != null ? 80 : 0, bottom: 20),
-                              child: _buildLevelCard(context, resep, isLocked),
-                            ),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(top: badge != null ? 80 : 0, bottom: 20),
+                            child: _buildLevelCard(context, resep, isLocked),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -305,7 +296,6 @@ class _LevelsScreenState extends State<LevelsScreen> {
             ),
           ),
           _optimizedSvg('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: 100),
-          const Icon(Icons.notifications, color: AppColors.orangePrimary),
         ],
       ),
     );
@@ -363,7 +353,7 @@ class _LevelsScreenState extends State<LevelsScreen> {
             icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30),
             onPressed: () => Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => MutualsScreen(
+              MaterialPageRoute(builder: (context) => MultiplayerLobbyScreen(
                 skinPath: widget.skinPath,
                 eyePath: widget.eyePath,
                 mouthPath: widget.mouthPath,
@@ -373,7 +363,6 @@ class _LevelsScreenState extends State<LevelsScreen> {
                 bangsPath: widget.bangsPath,
                 shirtPath: widget.shirtPath,
                 shirtColor: widget.shirtColor,
-                hairStyle: widget.hairStyle,
               )),
             ),
           ),

@@ -3,7 +3,7 @@ import '../constants/app_colors.dart';
 import 'homepage_screen.dart';
 import 'levels_screen.dart';
 import 'spice_journal_screen.dart';
-import 'mutuals_screen.dart';
+import 'multiplayer_lobby_screen.dart';
 
 class MultiplayerScoreScreen extends StatelessWidget {
   // Tambahkan parameter avatar agar data tidak hilang saat navigasi
@@ -102,7 +102,6 @@ class MultiplayerScoreScreen extends StatelessWidget {
         children: [
           CircleAvatar(radius: 18, backgroundColor: Colors.white, child: Icon(Icons.person, size: 20, color: Colors.grey)),
           Text("Spice Up!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          Icon(Icons.notifications, color: Colors.red),
         ],
       ),
     );
@@ -203,7 +202,7 @@ class MultiplayerScoreScreen extends StatelessWidget {
           GestureDetector(
             onTap: () => Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const MutualsScreen()),
+              MaterialPageRoute(builder: (context) => const MultiplayerLobbyScreen()),
             ),
             child: const Icon(Icons.person, color: Colors.grey),
           ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_colors.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -26,13 +28,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _handleRegister() {
+  void _handleRegister() async {
     if (_formKey.currentState!.validate()) {
-      // Logika pendaftaran di sini
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration Successful!')),
+      showDialog(
+        context: context, 
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator(color: AppColors.orangePrimary))
       );
-      Navigator.pop(context); // Kembali ke login setelah sukses
+
+      try {
+        // 1. Buat user di Firebase Auth
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passController.text,
+        );
+
+        // 2. Set Firebase Profil Name
+        await userCredential.user?.updateDisplayName(_nameController.text.trim());
+
+        // 3. Simpan data user ke Cloud Firestore (Tabel Users)
+        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+          'uid': userCredential.user!.uid,
+          'display_name': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'total_score': 0,
+          'badges': [],
+        });
+
+        if (!mounted) return;
+        Navigator.pop(context); // Tutup loading loading
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration Successful! Silakan Login.'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context); // Kembali ke login screen
+      } on FirebaseAuthException catch (e) {
+        if (!mounted) return;
+        Navigator.pop(context); // Tutup loading loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Registration failed'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 

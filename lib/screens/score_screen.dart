@@ -5,7 +5,7 @@ import '../models/recipe_model.dart';
 import 'levels_screen.dart';
 import 'homepage_screen.dart';
 import 'spice_journal_screen.dart';
-import 'mutuals_screen.dart';
+import 'multiplayer_lobby_screen.dart';
 import 'gameplay_screen.dart'; 
 import 'profile_screen.dart';
 
@@ -214,7 +214,6 @@ class ScoreScreen extends StatelessWidget {
             ),
           ),
           SvgPicture.asset('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: 110),
-          const Icon(Icons.notifications, color: Colors.orange),
         ],
       ),
     );
@@ -292,11 +291,10 @@ class ScoreScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30),
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MutualsScreen(
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MultiplayerLobbyScreen(
               skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
               nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
               bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
-              hairStyle: hairStyle,
             ))),
           ),
         ],

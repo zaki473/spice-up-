@@ -1,14 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../constants/app_colors.dart';
 
-class ForgotPasswordScreen extends StatelessWidget {
-  const ForgotPasswordScreen({super.key});
+class ChangePasswordScreen extends StatefulWidget {
+  const ChangePasswordScreen({super.key});
+
+  @override
+  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+}
+
+class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+  final TextEditingController _passController = TextEditingController();
+  final TextEditingController _confirmPassController = TextEditingController();
+  bool _isLoading = false;
+  bool _obscureText = true;
+
+  void _changePassword() async {
+    String newPass = _passController.text;
+    String confirmPass = _confirmPassController.text;
+
+    if (newPass.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Password minimal 6 karakter!"), backgroundColor: Colors.red));
+      return;
+    }
+    if (newPass != confirmPass) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Konfirmasi password tidak cocok!"), backgroundColor: Colors.red));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Ubah password langsung di Firebase secara internal
+      await FirebaseAuth.instance.currentUser?.updatePassword(newPass);
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Password berhasil diperbarui!"),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context); // Kembali ke Profile
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Gagal mengganti password. Silakan login ulang dan coba lagi.'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _passController.dispose();
+    _confirmPassController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final TextEditingController emailController = TextEditingController();
-
     return Scaffold(
       body: Stack(
         children: [
@@ -33,40 +86,57 @@ class ForgotPasswordScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      const Text('Forgot Password?', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                      const Text('Change Password', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                       const SizedBox(height: 10),
                       const Text(
-                        'Enter your email address below to receive password reset instructions.',
+                        'Set a new password for your account to keep it secure.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey),
                       ),
                       const SizedBox(height: 30),
                       TextFormField(
-                        controller: emailController,
+                        controller: _passController,
+                        obscureText: _obscureText,
+                        decoration: InputDecoration(
+                          labelText: 'New Password',
+                          prefixIcon: const Icon(Icons.lock_outline, color: AppColors.orangePrimary),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
+                            onPressed: () => setState(() => _obscureText = !_obscureText),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      TextFormField(
+                        controller: _confirmPassController,
+                        obscureText: _obscureText,
                         decoration: const InputDecoration(
-                          labelText: 'Email Address',
-                          prefixIcon: Icon(Icons.email_outlined, color: AppColors.orangePrimary),
+                          labelText: 'Confirm Password',
+                          prefixIcon: Icon(Icons.lock_reset, color: AppColors.orangePrimary),
                         ),
                       ),
                       const SizedBox(height: 40),
                       GestureDetector(
-                        onTap: () {
-                          // Logika kirim email reset password
-                          Navigator.pop(context);
-                        },
+                        onTap: _isLoading ? null : _changePassword,
                         child: Container(
                           width: double.infinity, height: 50,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(25),
-                            gradient: const LinearGradient(colors: [AppColors.orangeLight, AppColors.orangePrimary]),
+                            gradient: LinearGradient(colors: _isLoading 
+                                ? [Colors.grey, Colors.grey.shade400] 
+                                : [AppColors.orangeLight, AppColors.orangePrimary]),
                           ),
-                          child: const Center(child: Text('Send Reset Link', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold))),
+                          child: Center(
+                            child: _isLoading
+                                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                : const Text('Save Password', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Back to Login', style: TextStyle(color: AppColors.orangePrimary)),
+                        child: const Text('Cancel', style: TextStyle(color: AppColors.orangePrimary)),
                       ),
                     ],
                   ),

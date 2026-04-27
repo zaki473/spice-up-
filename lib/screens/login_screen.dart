@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_colors.dart';
 import 'customization_screen.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
+import 'homepage_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,25 +17,74 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
   bool _obscureText = true;
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _emailController.dispose();
     _passController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const CharacterCustomizationScreen(),
-        ),
+      showDialog(
+        context: context, 
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator(color: AppColors.orangePrimary))
       );
+
+      try {
+        UserCredential cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passController.text,
+        );
+
+        if (!mounted) return;
+
+        // Cek data User di Firestore
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(cred.user!.uid).get();
+        Navigator.pop(context); // Tutup loading
+
+        Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
+        if (data != null && data.containsKey('avatar_settings')) {
+          var avatar = data['avatar_settings'];
+          // Langsung ke Homepage karena sudah pernah Customization
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomepageScreen(
+                skinPath: avatar['skin'] ?? 'assets/images/skin/SU_AVATAR_SKIN01.svg',
+                eyePath: avatar['eyes'] ?? 'assets/images/eye/SU_AVATAR_EYE1.svg',
+                mouthPath: avatar['mouth'] ?? 'assets/images/mouth/SU_AVATAR_MOUTH1.svg',
+                nosePath: avatar['nose'] ?? 'assets/images/nose/SU_AVATAR_NOSE1.svg',
+                browsPath: avatar['brows'] ?? 'assets/images/brows/SU_AVATAR_BROWS1.svg',
+                hairPath: avatar['hair'] ?? 'assets/images/hair/SU_AVATAR_HAIR1.png',
+                bangsPath: avatar['bangs'] ?? 'assets/images/bangs/SU_AVATAR_BANGS1.svg',
+                shirtPath: avatar['top'] ?? 'assets/images/top/SU_AVATAR_TOP1.png',
+                shirtColor: Colors.white,
+                hairStyle: Icons.face,
+              ),
+            ),
+          );
+        } else {
+          // Belum punya avatar, paksa Customization dulu
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CharacterCustomizationScreen(),
+            ),
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        if (!mounted) return;
+        Navigator.pop(context); // Tutup loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Login failed'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -93,18 +145,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 30),
 
-                            // Input Name
+                            // Input Email
                             TextFormField(
-                              controller: _nameController,
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
-                                labelText: 'Name',
+                                labelText: 'Email',
                                 prefixIcon: Icon(
-                                  Icons.person_outline,
+                                  Icons.email_outlined,
                                   color: AppColors.orangePrimary,
                                 ),
                               ),
-                              validator: (value) => value!.isEmpty
-                                  ? 'Name cannot be empty'
+                              validator: (value) => !value!.contains('@')
+                                  ? 'Enter a valid email'
                                   : null,
                             ),
                             const SizedBox(height: 20),
@@ -136,24 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   : null,
                             ),
 
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const ForgotPasswordScreen(),
-                                    ),
-                                  );
-                                },
-                                child: const Text(
-                                  'Forget Password?',
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ),
-                            ),
+
 
                             // Tombol Log In
                             GestureDetector(

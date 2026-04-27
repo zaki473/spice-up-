@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "794274906749",
+    "project_id": "spice-up-1aece",
+    "storage_bucket": "spice-up-1aece.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:794274906749:android:8e7063d9d42a3038b8e714",
+        "android_client_info": {
+          "package_name": "com.example.spice_up"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvbFe7i2GsHQCfnQC-RXs9TOKqbUa9b0E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

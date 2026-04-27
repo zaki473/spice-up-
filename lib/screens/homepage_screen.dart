@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../constants/app_colors.dart';
 import 'levels_screen.dart';
-import 'mutuals_screen.dart';
+import 'multiplayer_lobby_screen.dart';
 import 'spice_journal_screen.dart';
 import 'profile_screen.dart';
 
@@ -144,7 +146,6 @@ class HomepageScreen extends StatelessWidget {
             ),
           ),
           SvgPicture.asset('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: 100),
-          const Icon(Icons.notifications, color: Color(0xFFD35400), size: 28),
         ],
       ),
     );
@@ -172,38 +173,107 @@ class HomepageScreen extends StatelessWidget {
                 decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12)),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Stack(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
-                    children: [
-                      _renderPart(skinPath, 80),
-                      Positioned(top: -12, left: -4, child: _renderPart(hairPath, 90)),
-                      Positioned(top: 20, child: _renderPart(browsPath, 22)),
-                      Positioned(top: 25, child: _renderPart(eyePath, 32)),
-                      Positioned(top: 40, child: _renderPart(nosePath, 6)),
-                      Positioned(top: 50, child: _renderPart(mouthPath, 12)),
-                      Positioned(top: -1, child: _renderPart(bangsPath, 42)),
-                      Positioned(bottom: -22, child: Transform.scale(scale: 2.2, child: _renderPart(shirtPath, 100))),
-                    ],
+                    child: SizedBox(
+                      width: 350,
+                      height: 350,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        clipBehavior: Clip.none,
+                        children: [
+                          // BASE
+                          _renderPart(skinPath, 350),
+
+                          // RAMBUT BELAKANG
+                          Positioned(
+                            top: -350 * 0.14,
+                            child: _renderPart(hairPath, 350 * 1.14),
+                          ),
+
+                          // ALIS
+                          Positioned(
+                            top: 350 * 0.20,
+                            child: _renderPart(browsPath, 350 * 0.26),
+                          ),
+
+                          // MATA
+                          Positioned(
+                            top: 350 * 0.25,
+                            child: _renderPart(eyePath, 350 * 0.36),
+                          ),
+
+                          // HIDUNG
+                          Positioned(
+                            top: 350 * 0.41,
+                            child: _renderPart(nosePath, 350 * 0.055),
+                          ),
+
+                          // MULUT
+                          Positioned(
+                            top: 350 * 0.50,
+                            child: _renderPart(mouthPath, 350 * 0.13),
+                          ),
+
+                          // PONI
+                          Positioned(
+                            top: -350 * 0.01,
+                            child: _renderPart(bangsPath, 350 * 0.48),
+                          ),
+
+                          // BAJU
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: Transform.translate(
+                                offset: const Offset(0, -16),
+                                child: Transform.scale(
+                                  scale: 1.2,
+                                  child: _renderPart(shirtPath, 350 * 3.30),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 15),
               // INFO AREA
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('ANGGUN', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.orange)),
-                    const Text('Anggun Natasha Simanjuntak', style: TextStyle(fontSize: 11, color: Colors.black54)),
-                    const Divider(height: 15),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots(),
+                  builder: (context, snapshot) {
+                    String displayName = 'Full Name';
+                    Map<String, dynamic>? data;
+                    if (snapshot.hasData && snapshot.data!.exists) {
+                      data = snapshot.data!.data() as Map<String, dynamic>?;
+                      if (data != null && data['full_name'] != null && data['full_name'] != '') {
+                        displayName = data['full_name'];
+                      } else if (data != null && data['display_name'] != null && data['display_name'] != '') {
+                        displayName = data['display_name']; // Fallback jika belum punya full_name
+                      }
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildMiniInfo('School', 'SMK Kota Blitar 1'),
-                        _buildMiniInfo('Birthday', '23/DEC/2006'),
+                        Text(displayName.toUpperCase(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.orange)),
+                        Text(FirebaseAuth.instance.currentUser?.email ?? '-', style: const TextStyle(fontSize: 11, color: Colors.black54), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const Divider(height: 15),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildMiniInfo('School', data != null && data['school'] != null && data['school'] != '' ? data['school'] : '-'),
+                            _buildMiniInfo('Birthday', data != null && data['birthday'] != null && data['birthday'] != '' ? data['birthday'] : '-'),
+                          ],
+                        ),
                       ],
-                    ),
-                  ],
+                    );
+                  }
                 ),
               )
             ],
@@ -340,7 +410,7 @@ class HomepageScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.person_outline, color: Colors.grey), 
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => MutualsScreen(skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath, nosePath: nosePath, browsPath: browsPath, hairPath: hairPath, bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor, hairStyle: hairStyle)))
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => MultiplayerLobbyScreen(skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath, nosePath: nosePath, browsPath: browsPath, hairPath: hairPath, bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor))),
           ),
         ],
       ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_colors.dart';
 import 'homepage_screen.dart';
 
@@ -103,72 +105,50 @@ class _CharacterCustomizationScreenState
 
                           // RAMBUT BELAKANG
                           Positioned(
-                            top: -avatarSize * 0.14, //kebawah maka besar, ke atas maka kecil
-                            left: avatarSize * -0.06, // semakin besar semakin ke kanan
-                            child: _renderPart(
-                              selectedHairPath,
-                              avatarSize * 1.14, // jika mau besar maka nilainya besar
-                            ),
+                            top: -avatarSize * 0.14,
+                            child: _renderPart(selectedHairPath, avatarSize * 1.14),
                           ),
 
                           // ALIS
                           Positioned(
-                            top: avatarSize * 0.20, // naik dikit
-                            child: _renderPart(
-                              selectedBrowsPath,
-                              avatarSize * 0.26,
-                            ),
+                            top: avatarSize * 0.20,
+                            child: _renderPart(selectedBrowsPath, avatarSize * 0.26),
                           ),
 
-                          // MATA ✅ NAIKIN DIKIT
+                          // MATA
                           Positioned(
                             top: avatarSize * 0.25,
-                            child: _renderPart(
-                              selectedEyePath,
-                              avatarSize * 0.36,
-                            ),
+                            child: _renderPart(selectedEyePath, avatarSize * 0.36),
                           ),
 
                           // HIDUNG
                           Positioned(
                             top: avatarSize * 0.41,
-                            child: _renderPart(
-                              selectedNosePath,
-                              avatarSize * 0.055,
-                            ),
+                            child: _renderPart(selectedNosePath, avatarSize * 0.055),
                           ),
 
                           // MULUT
                           Positioned(
                             top: avatarSize * 0.50,
-                            child: _renderPart(
-                              selectedMouthPath,
-                              avatarSize * 0.13,
-                            ),
+                            child: _renderPart(selectedMouthPath, avatarSize * 0.13),
                           ),
 
-                          // PONI ✅ DIANGKAT & DIPERKECIL
+                          // PONI
                           Positioned(
-                            top: -avatarSize * 0.01, // diangkat sedikit
-                            child: _renderPart(
-                              selectedBangsPath,
-                              avatarSize * 0.48, // sedikit lebih kecil biar gak nutup alis
-                            ),
+                            top: -avatarSize * 0.01,
+                            child: _renderPart(selectedBangsPath, avatarSize * 0.48),
                           ),
 
-                          // BAJU ✅ TURUNIN DIKIT
+                          // BAJU
                           Positioned(
-                            left: 1.10,
+                            left: 0,
                             right: 0,
                             child: Center(
                               child: Transform.translate(
-                                offset: Offset(5.2, -16), // Ini untuk menggeser posisinya (tetap dipertahankan)
+                                offset: const Offset(0, -16),
                                 child: Transform.scale(
-                                  scale: 1.2, // TAMBAHKAN INI: Nilai 1.0 adalah ukuran asli. 1.2 berarti membesar 20%, 1.5 berarti membesar 50%. Silakan sesuaikan angka ini.
-                                  child: _renderPart(
-                                    selectedTopPath,
-                                    avatarSize * 3.30, // Biarkan parameter ini di angka yang aman
-                                  ),
+                                  scale: 1.2,
+                                  child: _renderPart(selectedTopPath, avatarSize * 3.30),
                                 ),
                               ),
                             ),
@@ -225,17 +205,40 @@ class _CharacterCustomizationScreenState
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.orangePrimary),
-            onPressed: () => Navigator.pop(context),
-          ),
           SvgPicture.asset(
             'assets/images/logo_dan_bg/SU_TYPEFACE.svg',
             width: 120,
             fit: BoxFit.contain,
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              showDialog(
+                context: context, 
+                barrierDismissible: false,
+                builder: (context) => const Center(child: CircularProgressIndicator(color: AppColors.orangePrimary))
+              );
+
+              // 1. Simpan Pilihan Avatar ke Firestore
+              var user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+                  'avatar_settings': {
+                    'skin': selectedSkinPath,
+                    'eyes': selectedEyePath,
+                    'mouth': selectedMouthPath,
+                    'nose': selectedNosePath,
+                    'brows': selectedBrowsPath,
+                    'hair': selectedHairPath,
+                    'bangs': selectedBangsPath,
+                    'top': selectedTopPath,
+                  }
+                }, SetOptions(merge: true));
+              }
+
+              if (!mounted) return;
+              Navigator.pop(context); // Tutup Loading
+
+              // 2. Teruskan pengguna ke Homepage membawa Avatarnya
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
@@ -260,7 +263,7 @@ class _CharacterCustomizationScreenState
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Text('Done', style: TextStyle(color: Colors.white)),
+            child: const Text('Save & Done', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

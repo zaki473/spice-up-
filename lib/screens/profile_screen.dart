@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'login_screen.dart'; // Pastikan file login_screen.dart sudah diimport
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart'; 
+import 'forgot_password_screen.dart';
+import 'customization_screen.dart';
 
 class ProfileSettingPage extends StatelessWidget {
   final String skinPath;
@@ -27,6 +31,40 @@ class ProfileSettingPage extends StatelessWidget {
     required this.shirtColor,
     required this.hairStyle,
   });
+
+  void _editProfileData(BuildContext context, Map<String, dynamic> currentData) {
+    TextEditingController schoolCtrl = TextEditingController(text: currentData['school'] ?? '');
+    TextEditingController birthdayCtrl = TextEditingController(text: currentData['birthday'] ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Edit Profile Info", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: schoolCtrl, decoration: const InputDecoration(labelText: "School")),
+            TextField(controller: birthdayCtrl, decoration: const InputDecoration(labelText: "Birthday (DD/MM/YYYY)", hintText: "e.g., 23/12/2006")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).set({
+                'school': schoolCtrl.text.trim(),
+                'birthday': birthdayCtrl.text.trim(),
+              }, SetOptions(merge: true));
+              if (context.mounted) Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text("Save"),
+          )
+        ],
+      ),
+    );
+  }
 
   // Fungsi untuk menampilkan Pop-up About App
   void _showAboutApp(BuildContext context) {
@@ -127,7 +165,6 @@ class ProfileSettingPage extends StatelessWidget {
                     children: [
                       const SizedBox(width: 40),
                       SvgPicture.asset('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: 100),
-                      const Icon(Icons.notifications, color: Color(0xFFD35400), size: 30),
                     ],
                   ),
                 ),
@@ -182,22 +219,84 @@ class ProfileSettingPage extends StatelessWidget {
                                   decoration: BoxDecoration(border: Border.all(color: Colors.black, width: 0.5)),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        _renderPart(skinPath, 90),
-                                        Positioned(top: 35, child: _renderPart(browsPath, 40)),
-                                        Positioned(top: 40, child: _renderPart(eyePath, 45)),
-                                        Positioned(top: 55, child: _renderPart(nosePath, 12)),
-                                        Positioned(top: 65, child: _renderPart(mouthPath, 18)),
-                                        Positioned(top: 5, child: _renderPart(hairPath, 80)),
-                                        Positioned(top: 12, child: _renderPart(bangsPath, 70)),
-                                        Positioned(bottom: -5, child: _renderPart(shirtPath, 80)),
-                                      ],
+                                    child: FittedBox(
+                                      fit: BoxFit.cover,
+                                      alignment: Alignment.topCenter,
+                                      child: SizedBox(
+                                        width: 350,
+                                        height: 350,
+                                        child: Stack(
+                                          alignment: Alignment.center,
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            // BASE
+                                            _renderPart(skinPath, 350),
+
+                                            // RAMBUT BELAKANG
+                                            Positioned(
+                                              top: -350 * 0.14,
+                                              child: _renderPart(hairPath, 350 * 1.14),
+                                            ),
+
+                                            // ALIS
+                                            Positioned(
+                                              top: 350 * 0.20,
+                                              child: _renderPart(browsPath, 350 * 0.26),
+                                            ),
+
+                                            // MATA
+                                            Positioned(
+                                              top: 350 * 0.25,
+                                              child: _renderPart(eyePath, 350 * 0.36),
+                                            ),
+
+                                            // HIDUNG
+                                            Positioned(
+                                              top: 350 * 0.41,
+                                              child: _renderPart(nosePath, 350 * 0.055),
+                                            ),
+
+                                            // MULUT
+                                            Positioned(
+                                              top: 350 * 0.50,
+                                              child: _renderPart(mouthPath, 350 * 0.13),
+                                            ),
+
+                                            // PONI
+                                            Positioned(
+                                              top: -350 * 0.01,
+                                              child: _renderPart(bangsPath, 350 * 0.48),
+                                            ),
+
+                                            // BAJU
+                                            Positioned(
+                                              left: 0,
+                                              right: 0,
+                                              child: Center(
+                                                child: Transform.translate(
+                                                  offset: const Offset(0, -16),
+                                                  child: Transform.scale(
+                                                    scale: 1.2,
+                                                    child: _renderPart(shirtPath, 350 * 3.30),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                                const Positioned(top: 0, right: 0, child: Icon(Icons.edit_note, color: Colors.deepOrange)),
+                                Positioned(
+                                  top: 0, right: 0, 
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const CharacterCustomizationScreen()));
+                                    },
+                                    child: const Icon(Icons.edit_note, color: Colors.deepOrange)
+                                  )
+                                ),
                               ],
                             ),
                             const SizedBox(height: 5),
@@ -207,25 +306,38 @@ class ProfileSettingPage extends StatelessWidget {
                         const SizedBox(width: 15),
                         // Info Section
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: StreamBuilder<DocumentSnapshot>(
+                            stream: FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                              var data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+                              String displayName = data['full_name'] ?? 'Full Name';
+                              String email = FirebaseAuth.instance.currentUser!.email ?? '-';
+                              String school = data['school'] ?? '-';
+                              String birthday = data['birthday'] ?? '-';
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text("ANGGUN", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFFE67E22))),
-                                  const Icon(Icons.edit_note, color: Colors.deepOrange),
-                                ],
-                              ),
-                              const Text("Anggun Natasha Simanjuntak", style: TextStyle(fontSize: 12)),
-                              const Divider(color: Colors.black54),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildSmallInfo("School", "SMK Kota Blitar 1"),
-                                  _buildSmallInfo("Birthday", "23/DEC/2006"),
-                                ],
-                              ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(child: Text(displayName.toUpperCase(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFFE67E22)))),
+                                      GestureDetector(
+                                        onTap: () => _editProfileData(context, data),
+                                        child: const Icon(Icons.edit_note, color: Colors.deepOrange),
+                                      ),
+                                    ],
+                                  ),
+                                  Text(email, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  const Divider(color: Colors.black54),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      _buildSmallInfo("School", school),
+                                      _buildSmallInfo("Birthday", birthday),
+                                    ],
+                                  ),
                               const SizedBox(height: 10),
                               const Text("Badges", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 5),
@@ -237,8 +349,10 @@ class ProfileSettingPage extends StatelessWidget {
                                 ],
                               ),
                             ],
-                          ),
+                          );
+                         }
                         ),
+                      ),
                       ],
                     ),
                   ),
@@ -248,7 +362,9 @@ class ProfileSettingPage extends StatelessWidget {
 
                 // Menu Sections
                 _buildSectionHeader("General Settings"),
-                _buildMenuItem(Icons.vpn_key, "Change Password", () {}),
+                _buildMenuItem(Icons.vpn_key, "Change Password", () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordScreen()));
+                }),
 
                 const SizedBox(height: 20),
 

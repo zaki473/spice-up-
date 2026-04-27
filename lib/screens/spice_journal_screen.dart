@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../constants/app_colors.dart';
 import 'homepage_screen.dart';
 import 'levels_screen.dart';
-import 'mutuals_screen.dart';
+import 'multiplayer_lobby_screen.dart';
 import 'profile_screen.dart';
 
 // Model Data untuk Bumbu
@@ -353,7 +353,6 @@ class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
                 width: 100, 
                 fit: BoxFit.contain,
           ),
-          const Icon(Icons.notifications, color: Colors.red),
         ],
       ),
     );
@@ -416,7 +415,7 @@ class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
           const Icon(Icons.menu_book, color: Colors.orange, size: 35),
           IconButton(
             icon: const Icon(Icons.person_outline, color: Colors.grey, size: 30),
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MutualsScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor, hairStyle: widget.hairStyle))),
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MultiplayerLobbyScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor))),
           ),
         ],
       ),

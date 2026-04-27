@@ -103,7 +103,6 @@ class MutualsScreen extends StatelessWidget {
                 width: 100, 
                 fit: BoxFit.contain,
           ),
-          const Icon(Icons.notifications, color: Colors.red),
         ],
       ),
     );
