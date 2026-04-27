@@ -97,7 +97,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "Ayam Taliwang",
     subtitle: " Lombok Spicy Grilled Chicken ",
-    imagePath: 'assets/food/SU_FOOD_01_AYAM_TALIWANG.png',
+    imagePath: 'assets/food/SU_FOOD_02_AYAM_TALIWANG.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.bumbu,
@@ -145,7 +145,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "Tinutuan",
     subtitle: " Manado Vegetable Porridge",
-    imagePath: 'assets/food/SU_FOOD_01_TINUTUAN.png',
+    imagePath: 'assets/food/SU_FOOD_02_TINUTUAN.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.bumbu,
@@ -169,7 +169,7 @@ final List<Recipe> listResep = [
         text: "Which is often used in soups as a fragrant leaf?",
         options: ["Bay leaves", "Spinach", "Lettuce", "Kale"],
         correctAnswerIndex: 0,
-        imagePath: 'assets/quiz/SPC_BAY_LEAVES.png', // Gambar Spesifik Soal
+        imagePath: 'assets/quiz/SPC_BAYLEAVES.png', // Gambar Spesifik Soal
         hint: "Usually added whole, not eaten directly",
       ),
       Question(
@@ -193,7 +193,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "Papeda",
     subtitle: "Sago Porridge",
-    imagePath: 'assets/food/SU_FOOD_01_PAPEDA.png',
+    imagePath: 'assets/food/SU_FOOD_02_PAPEDA.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.bumbu,
@@ -241,7 +241,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "Coto Makassar",
     subtitle: "Makassar Beef Soup",
-    imagePath: 'assets/food/SU_FOOD_01_COTO_MAKASSAR.png',
+    imagePath: 'assets/food/SU_FOOD_03_COTOMAKASSAR.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.litle,
@@ -289,7 +289,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "Arsik",
     subtitle: "Batak Spiced Fish",
-    imagePath: 'assets/food/SU_FOOD_01_ARSIK.png',
+    imagePath: 'assets/food/SU_FOOD_03_ARSIK.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.litle,
@@ -337,7 +337,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "Ayam Betutu",
     subtitle: "Balinese Spiced Chicken",
-    imagePath: 'assets/food/SU_FOOD_01_AYAM_BETUTU.png',
+    imagePath: 'assets/food/SU_FOOD_03_AYAMBETUTU.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.litle,

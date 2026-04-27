@@ -7,8 +7,10 @@ import 'levels_screen.dart';
 import 'multiplayer_lobby_screen.dart';
 import 'spice_journal_screen.dart';
 import 'profile_screen.dart';
+import '../data/recipe_data.dart';
+import '../models/recipe_model.dart';
 
-class HomepageScreen extends StatelessWidget {
+class HomepageScreen extends StatefulWidget {
   final String skinPath;
   final String eyePath;
   final String mouthPath;
@@ -34,7 +36,16 @@ class HomepageScreen extends StatelessWidget {
     required this.hairStyle,
   });
 
-  // Fungsi Helper Render Gambar (SVG atau PNG)
+  @override
+  State<HomepageScreen> createState() => _HomepageScreenState();
+}
+
+class _HomepageScreenState extends State<HomepageScreen> {
+  // Controller untuk menangkap input pencarian
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+
+  // Fungsi Helper Render Gambar
   Widget _renderPart(String path, double size) {
     if (path.isEmpty) return const SizedBox();
     if (path.toLowerCase().endsWith('.svg')) {
@@ -49,16 +60,16 @@ class HomepageScreen extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) => ProfileSettingPage(
-          skinPath: skinPath,
-          eyePath: eyePath,
-          mouthPath: mouthPath,
-          nosePath: nosePath,
-          browsPath: browsPath,
-          hairPath: hairPath,
-          bangsPath: bangsPath,
-          shirtPath: shirtPath,
-          shirtColor: shirtColor,
-          hairStyle: hairStyle,
+          skinPath: widget.skinPath,
+          eyePath: widget.eyePath,
+          mouthPath: widget.mouthPath,
+          nosePath: widget.nosePath,
+          browsPath: widget.browsPath,
+          hairPath: widget.hairPath,
+          bangsPath: widget.bangsPath,
+          shirtPath: widget.shirtPath,
+          shirtColor: widget.shirtColor,
+          hairStyle: widget.hairStyle,
         ),
       ),
     );
@@ -80,49 +91,92 @@ class HomepageScreen extends StatelessWidget {
             children: [
               Column(
                 children: [
-                  // --- HEADER ---
                   _buildHeader(context),
-
-                  // --- PROFILE CARD (FIXED AVATAR POSITIONS) ---
                   _buildProfileCard(context),
-
-                  // --- SEARCH BAR ---
                   _buildSearchBar(),
 
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Recently Played',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFD35400)),
+                        _searchQuery.isEmpty ? 'Recently Played' : 'Search Results',
+                        style: const TextStyle(
+                          fontSize: 18, 
+                          fontWeight: FontWeight.bold, 
+                          color: Color(0xFFD35400)
+                        ),
                       ),
                     ),
                   ),
 
-                  // --- RECIPE GRID (FIXED IMAGE SIZE) ---
+                  // --- RECIPE GRID DENGAN LOGIKA FILTER ---
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: GridView.count(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 14,
-                        childAspectRatio: 0.78, // Diperpanjang sedikit ke bawah
-                        children: [
-                          _buildRecipeCard(context, 'Mi Gomak', 'Batak Spicy Noodles', 3, 'assets/food/SU_FOOD_01_MI_GOMAK.png'),
-                          _buildRecipeCard(context, 'Ikan Kuah Kuning', 'Yellow Turmeric Fish Soup', 4, 'assets/food/SU_FOOD_01_IKAN_KUAH_KUNING.png'),
-                          _buildRecipeCard(context, 'Ayam Betutu', 'Balinese Spiced Chicken', 4, 'assets/food/SU_FOOD_03_AYAMBETUTU.png'),
-                          _buildRecipeCard(context, 'Coto Makassar', 'Sulawesi Beef Soup', 5, 'assets/food/SU_FOOD_03_COTOMAKASSAR.png'),
-                        ],
+                      child: StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser!.uid)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          List<Recipe> displayRecipes = [];
+
+                          if (_searchQuery.isEmpty) {
+                            // Logika Default: Recently Played
+                            if (snapshot.hasData && snapshot.data!.exists) {
+                              Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
+                              List<dynamic> recentTitles = data['recently_played'] is List ? data['recently_played'] : [];
+                              
+                              for (var title in recentTitles) {
+                                try {
+                                  displayRecipes.add(listResep.firstWhere((r) => r.title == title));
+                                } catch (e) { /* Ignore */ }
+                              }
+                            }
+                            // Fallback jika recently played kosong
+                            if (displayRecipes.isEmpty) {
+                              displayRecipes = [listResep[0], listResep[1], listResep[7], listResep[5]];
+                            }
+                          } else {
+                            // Logika Cari: Filter berdasarkan Nama
+                            displayRecipes = listResep.where((recipe) {
+                              return recipe.title.toLowerCase().contains(_searchQuery.toLowerCase());
+                            }).toList();
+                          }
+
+                          if (displayRecipes.isEmpty) {
+                             return const Center(child: Text("No recipes found."));
+                          }
+
+                          return GridView.builder(
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 14,
+                              mainAxisSpacing: 14,
+                              childAspectRatio: 0.78,
+                            ),
+                            itemCount: displayRecipes.length,
+                            itemBuilder: (context, index) {
+                              final resep = displayRecipes[index];
+                              int resepStars = 0;
+                              
+                              if (snapshot.hasData && snapshot.data!.exists) {
+                                Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
+                                Map<String, dynamic> progress = data['progress'] is Map ? Map<String, dynamic>.from(data['progress']) : {};
+                                resepStars = progress[resep.title] ?? 0;
+                              }
+                              
+                              return _buildRecipeCard(context, resep.title, resep.subtitle, resepStars, resep.imagePath);
+                            },
+                          );
+                        }
                       ),
                     ),
                   ),
                   const SizedBox(height: 90),
                 ],
               ),
-
-              // --- FLOATING BOTTOM NAV ---
               Align(alignment: Alignment.bottomCenter, child: _buildBottomNav(context)),
             ],
           ),
@@ -167,7 +221,6 @@ class HomepageScreen extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // AVATAR AREA (FIXED POSITIONS)
               Container(
                 width: 80, height: 100,
                 decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12)),
@@ -183,55 +236,21 @@ class HomepageScreen extends StatelessWidget {
                         alignment: Alignment.center,
                         clipBehavior: Clip.none,
                         children: [
-                          // BASE
-                          _renderPart(skinPath, 350),
-
-                          // RAMBUT BELAKANG
+                          _renderPart(widget.skinPath, 350),
+                          Positioned(top: -350 * 0.14, child: _renderPart(widget.hairPath, 350 * 1.14)),
+                          Positioned(top: 350 * 0.20, child: _renderPart(widget.browsPath, 350 * 0.26)),
+                          Positioned(top: 350 * 0.25, child: _renderPart(widget.eyePath, 350 * 0.36)),
+                          Positioned(top: 350 * 0.41, child: _renderPart(widget.nosePath, 350 * 0.055)),
+                          Positioned(top: 350 * 0.50, child: _renderPart(widget.mouthPath, 350 * 0.13)),
+                          Positioned(top: -350 * 0.01, child: _renderPart(widget.bangsPath, 350 * 0.48)),
                           Positioned(
-                            top: -350 * 0.14,
-                            child: _renderPart(hairPath, 350 * 1.14),
-                          ),
-
-                          // ALIS
-                          Positioned(
-                            top: 350 * 0.20,
-                            child: _renderPart(browsPath, 350 * 0.26),
-                          ),
-
-                          // MATA
-                          Positioned(
-                            top: 350 * 0.25,
-                            child: _renderPart(eyePath, 350 * 0.36),
-                          ),
-
-                          // HIDUNG
-                          Positioned(
-                            top: 350 * 0.41,
-                            child: _renderPart(nosePath, 350 * 0.055),
-                          ),
-
-                          // MULUT
-                          Positioned(
-                            top: 350 * 0.50,
-                            child: _renderPart(mouthPath, 350 * 0.13),
-                          ),
-
-                          // PONI
-                          Positioned(
-                            top: -350 * 0.01,
-                            child: _renderPart(bangsPath, 350 * 0.48),
-                          ),
-
-                          // BAJU
-                          Positioned(
-                            left: 0,
-                            right: 0,
+                            left: 0, right: 0,
                             child: Center(
                               child: Transform.translate(
                                 offset: const Offset(0, -16),
                                 child: Transform.scale(
                                   scale: 1.2,
-                                  child: _renderPart(shirtPath, 350 * 3.30),
+                                  child: _renderPart(widget.shirtPath, 350 * 3.30),
                                 ),
                               ),
                             ),
@@ -243,7 +262,6 @@ class HomepageScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 15),
-              // INFO AREA
               Expanded(
                 child: StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots(),
@@ -254,8 +272,6 @@ class HomepageScreen extends StatelessWidget {
                       data = snapshot.data!.data() as Map<String, dynamic>?;
                       if (data != null && data['full_name'] != null && data['full_name'] != '') {
                         displayName = data['full_name'];
-                      } else if (data != null && data['display_name'] != null && data['display_name'] != '') {
-                        displayName = data['display_name']; // Fallback jika belum punya full_name
                       }
                     }
                     return Column(
@@ -267,8 +283,8 @@ class HomepageScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildMiniInfo('School', data != null && data['school'] != null && data['school'] != '' ? data['school'] : '-'),
-                            _buildMiniInfo('Birthday', data != null && data['birthday'] != null && data['birthday'] != '' ? data['birthday'] : '-'),
+                            _buildMiniInfo('School', data?['school'] ?? '-'),
+                            _buildMiniInfo('Birthday', data?['birthday'] ?? '-'),
                           ],
                         ),
                       ],
@@ -298,12 +314,26 @@ class HomepageScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       child: Container(
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(25)),
-        child: const TextField(
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
           decoration: InputDecoration(
             hintText: 'Search Recipes...',
-            prefixIcon: Icon(Icons.search, color: Colors.orange),
+            prefixIcon: const Icon(Icons.search, color: Colors.orange),
+            suffixIcon: _searchQuery.isNotEmpty 
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 20), 
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() { _searchQuery = ""; });
+                  }) 
+              : null,
             border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
       ),
@@ -311,85 +341,53 @@ class HomepageScreen extends StatelessWidget {
   }
 
   Widget _buildRecipeCard(BuildContext context, String title, String subtitle, int stars, String imagePath) {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Colors.orange.shade100),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 5,
-          offset: const Offset(0, 3),
-        )
-      ],
-    ),
-    child: Column(
-      children: [
-        // 1. BAGIAN GAMBAR (DIBUAT PRESISI & LEBIH BESAR)
-        Expanded(
-          flex: 6,
-          child: Container(
-            width: double.infinity,
-            margin: const EdgeInsets.all(6), // Margin tipis agar ada list putih di luar
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEBD2), 
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15), // Memotong gambar agar melengkung pas dengan kotak
-              child: Image.asset(
-                imagePath, 
-                fit: BoxFit.cover, // Membuat gambar memenuhi kotak secara presisi
-                errorBuilder: (c, e, s) => const Icon(Icons.fastfood, color: Colors.orange, size: 40),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.orange.shade100),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            flex: 6,
+            child: Container(
+              width: double.infinity,
+              margin: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: const Color(0xFFFFEBD2), borderRadius: BorderRadius.circular(15)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Image.asset(imagePath, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.fastfood, color: Colors.orange, size: 40)),
               ),
             ),
           ),
-        ),
-        
-        // 2. BAGIAN TEKS
-        Expanded(
-          flex: 4,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  title, 
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF3E2723)), 
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  subtitle, 
-                  style: const TextStyle(fontSize: 10, color: Colors.grey), 
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: List.generate(5, (i) => Icon(
-                        Icons.star, 
-                        size: 12, 
-                        color: i < stars ? Colors.orange : Colors.grey.shade300
-                      )),
-                    ),
-                    const Icon(Icons.play_circle_fill, color: Colors.orange, size: 24),
-                  ],
-                )
-              ],
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF3E2723)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(subtitle, style: const TextStyle(fontSize: 10, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(children: List.generate(5, (i) => Icon(Icons.star, size: 12, color: i < stars ? Colors.orange : Colors.grey.shade300))),
+                      const Icon(Icons.play_circle_fill, color: Colors.orange, size: 24),
+                    ],
+                  )
+                ],
+              ),
             ),
-          ),
-        )
-      ],
-    ),
-  );
-}
+          )
+        ],
+      ),
+    );
+  }
 
   Widget _buildBottomNav(BuildContext context) {
     return Container(
@@ -402,18 +400,24 @@ class HomepageScreen extends StatelessWidget {
           const Icon(Icons.home, color: Colors.orange, size: 30),
           IconButton(
             icon: const Icon(Icons.play_circle_outline, color: Colors.grey), 
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LevelsScreen(skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath, nosePath: nosePath, browsPath: browsPath, hairPath: hairPath, bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor, hairStyle: hairStyle)))
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LevelsScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor, hairStyle: widget.hairStyle)))
           ),
           IconButton(
             icon: const Icon(Icons.menu_book, color: Colors.grey), 
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => SpiceJournalScreen(skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath, nosePath: nosePath, browsPath: browsPath, hairPath: hairPath, bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor, hairStyle: hairStyle)))
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => SpiceJournalScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor, hairStyle: widget.hairStyle)))
           ),
           IconButton(
             icon: const Icon(Icons.person_outline, color: Colors.grey), 
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => MultiplayerLobbyScreen(skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath, nosePath: nosePath, browsPath: browsPath, hairPath: hairPath, bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor))),
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => MultiplayerLobbyScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor))),
           ),
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose(); // Bersihkan memory controller
+    super.dispose();
   }
 }

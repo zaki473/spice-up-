@@ -316,6 +316,8 @@ class ProfileSettingPage extends StatelessWidget {
                               String school = data['school'] ?? '-';
                               String birthday = data['birthday'] ?? '-';
 
+                              List<dynamic> unlockedBadges = data['unlocked_badges'] is List ? data['unlocked_badges'] : [];
+
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -338,18 +340,27 @@ class ProfileSettingPage extends StatelessWidget {
                                       _buildSmallInfo("Birthday", birthday),
                                     ],
                                   ),
-                              const SizedBox(height: 10),
-                              const Text("Badges", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 5),
-                              Row(
-                                children: [
-                                  _buildBadge(Icons.eco, Colors.orange),
-                                  const SizedBox(width: 10),
-                                  _buildBadge(Icons.soup_kitchen, Colors.blue),
+                                  const SizedBox(height: 10),
+                                  const Text("Badges", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 5),
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        if (unlockedBadges.isEmpty)
+                                          const Text("No badges yet", style: TextStyle(fontSize: 10, color: Colors.grey, fontStyle: FontStyle.italic)),
+                                        if (unlockedBadges.contains("SPICE SPROUT"))
+                                          Padding(padding: const EdgeInsets.only(right: 10), child: _buildSvgBadge('assets/badges/SU_BADGES_01.SVG', Colors.orange.shade800, "SPICE SPROUT")),
+                                        if (unlockedBadges.contains("LITTLE MORTAR"))
+                                          Padding(padding: const EdgeInsets.only(right: 10), child: _buildSvgBadge('assets/badges/SU_BADGES_02.SVG', Colors.cyan.shade600, "LITTLE MORTAR")),
+                                        if (unlockedBadges.contains("BUMBU BUDDY"))
+                                          Padding(padding: const EdgeInsets.only(right: 10), child: _buildSvgBadge('assets/badges/SU_BADGES_03.SVG', Colors.pinkAccent, "BUMBU BUDDY")),
+                                      ],
+                                    ),
+                                  ),
                                 ],
-                              ),
-                            ],
-                          );
+                              );
                          }
                         ),
                       ),
@@ -435,6 +446,20 @@ class ProfileSettingPage extends StatelessWidget {
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(color: color.withOpacity(0.2), shape: BoxShape.circle, border: Border.all(color: color)),
       child: Icon(icon, color: color, size: 20),
+    );
+  }
+
+  Widget _buildSvgBadge(String path, Color color, String name) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle, border: Border.all(color: color, width: 1.5)),
+          child: SvgPicture.asset(path, width: 22, height: 22, fit: BoxFit.contain),
+        ),
+        const SizedBox(height: 4),
+        Text(name, style: TextStyle(fontSize: 8, color: color, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 }

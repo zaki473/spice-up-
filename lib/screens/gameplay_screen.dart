@@ -4,6 +4,9 @@ import '../models/recipe_model.dart';
 import 'score_screen.dart';
 import 'levels_screen.dart';
 import 'profile_screen.dart'; // pastikan import ini ada
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../data/recipe_data.dart';
 
 class GameplayScreen extends StatefulWidget {
   final Recipe resep;
@@ -78,6 +81,59 @@ class _GameplayScreenState extends State<GameplayScreen> {
       if (score > 0 && finalStars == 0) finalStars = 1;
       widget.resep.stars = finalStars;
 
+      // UPDATE TO FIRESTORE
+      final User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+        
+        try {
+          await FirebaseFirestore.instance.runTransaction((transaction) async {
+            DocumentSnapshot snapshot = await transaction.get(userRef);
+            if (!snapshot.exists) return;
+            
+            Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
+            
+            // Update Progress
+            Map<String, dynamic> progress = data['progress'] is Map ? Map<String, dynamic>.from(data['progress']) : {};
+            int currentStars = progress[widget.resep.title] ?? 0;
+            if (finalStars > currentStars) {
+              progress[widget.resep.title] = finalStars;
+            }
+
+            // Update Recently Played
+            List<dynamic> recent = data['recently_played'] is List ? List<dynamic>.from(data['recently_played']) : [];
+            recent.remove(widget.resep.title);
+            recent.insert(0, widget.resep.title);
+            if (recent.length > 4) recent = recent.sublist(0, 4);
+
+            // Update Badges
+            List<dynamic> badges = data['unlocked_badges'] is List ? List<dynamic>.from(data['unlocked_badges']) : [];
+            int recipeIndex = listResep.indexOf(widget.resep);
+            
+            if (finalStars > 0) {
+              if (recipeIndex == 0 && !badges.contains("SPICE SPROUT")) {
+                badges.add("SPICE SPROUT");
+              } else if (recipeIndex > 0 && widget.resep.difficulty != listResep[recipeIndex - 1].difficulty) {
+                if (widget.resep.difficulty == Difficulty.litle && !badges.contains("LITTLE MORTAR")) {
+                  badges.add("LITTLE MORTAR");
+                } else if (widget.resep.difficulty == Difficulty.bumbu && !badges.contains("BUMBU BUDDY")) {
+                  badges.add("BUMBU BUDDY");
+                }
+              }
+            }
+
+            transaction.set(userRef, {
+              'progress': progress,
+              'recently_played': recent,
+              'unlocked_badges': badges,
+            }, SetOptions(merge: true));
+          });
+        } catch (e) {
+          debugPrint("Failed to update progress: $e");
+        }
+      }
+
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -245,7 +301,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
                 ),
               ),
 
-              _buildBottomNav(),
               const SizedBox(height: 10),
             ],
           ),
@@ -287,67 +342,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
           SvgPicture.asset(
             'assets/images/logo_dan_bg/SU_TYPEFACE.svg',
             width: 80,
-          ),
-          const Icon(Icons.notifications, color: Colors.redAccent),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LevelsScreen()),
-                (route) => false,
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade400,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.home, color: Colors.white, size: 20),
-                    SizedBox(width: 5),
-                    Text("Home", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          const Icon(Icons.play_circle_fill, color: Colors.orange, size: 35),
-          const SizedBox(width: 15),
-          Icon(Icons.menu_book_rounded, color: Colors.grey.shade400),
-          const SizedBox(width: 15),
-          // Icon Profile di Bottom Nav juga bisa diarahkan ke ProfileScreen
-          GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileSettingPage(
-              skinPath: 'assets/images/skin/SU_AVATAR_SKIN01.svg',
-              eyePath: 'assets/images/eye/SU_AVATAR_EYE1.svg',
-              mouthPath: 'assets/images/mouth/SU_AVATAR_MOUTH1.svg',
-              nosePath: 'assets/images/nose/SU_AVATAR_NOSE1.svg',
-              browsPath: 'assets/images/brows/SU_AVATAR_BROWS1.svg',
-              hairPath: 'assets/images/hair/SU_AVATAR_HAIR1.png',
-              bangsPath: 'assets/images/bangs/SU_AVATAR_BANGS1.svg',
-              shirtPath: 'assets/images/top/SU_AVATAR_TOP1.png',
-              shirtColor: Colors.orange,
-              hairStyle: Icons.person,
-            ))),
-            child: Icon(Icons.person, color: Colors.grey.shade400),
           ),
         ],
       ),

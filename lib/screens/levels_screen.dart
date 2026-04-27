@@ -8,6 +8,8 @@ import 'homepage_screen.dart';
 import 'spice_journal_screen.dart';
 import 'multiplayer_lobby_screen.dart';
 import 'profile_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LevelsScreen extends StatefulWidget {
   final String skinPath;
@@ -117,50 +119,66 @@ class _LevelsScreenState extends State<LevelsScreen> {
             children: [
               _buildHeader(),
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  itemCount: listResep.length,
-                  itemBuilder: (context, index) {
-                    final resep = listResep[index];
-
-                    bool isLocked = false;
-                    if (index > 0 && listResep[index - 1].stars == 0) {
-                      isLocked = true;
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots(),
+                  builder: (context, snapshot) {
+                    Map<String, dynamic> progress = {};
+                    if (snapshot.hasData && snapshot.data!.exists) {
+                      Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
+                      progress = data['progress'] is Map ? Map<String, dynamic>.from(data['progress']) : {};
                     }
 
-                    Widget? badge;
-                    if (index == 0) {
-                      badge = _buildTimelineBadge("SPICE SPROUT", Colors.orange.shade800, 'assets/badges/SU_BADGES_01.SVG');
-                    } else if (index > 0 && resep.difficulty != listResep[index - 1].difficulty) {
-                      if (resep.difficulty == Difficulty.litle) {
-                        badge = _buildTimelineBadge("LITTLE MORTAR", Colors.cyan.shade600, 'assets/badges/SU_BADGES_02.SVG');
-                      } else if (resep.difficulty == Difficulty.bumbu) {
-                        badge = _buildTimelineBadge("BUMBU BUDDY", Colors.pinkAccent, 'assets/badges/SU_BADGES_03.SVG');
-                      }
-                    }
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      itemCount: listResep.length,
+                      itemBuilder: (context, index) {
+                        final resep = listResep[index];
 
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 75,
-                          child: Stack(
-                            alignment: Alignment.topCenter,
-                            children: [
-                              _buildDashedLine(index, isLocked),
-                              if (badge != null) badge,
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(top: badge != null ? 80 : 0, bottom: 20),
-                            child: _buildLevelCard(context, resep, isLocked),
-                          ),
-                        ),
-                      ],
+                        int currentStars = progress[resep.title] ?? 0;
+
+                        bool isLocked = false;
+                        if (index > 0) {
+                          int prevStars = progress[listResep[index - 1].title] ?? 0;
+                          if (prevStars == 0) {
+                            isLocked = true;
+                          }
+                        }
+
+                        Widget? badge;
+                        if (index == 0) {
+                          badge = _buildTimelineBadge("SPICE SPROUT", Colors.orange.shade800, 'assets/badges/SU_BADGES_01.SVG');
+                        } else if (index > 0 && resep.difficulty != listResep[index - 1].difficulty) {
+                          if (resep.difficulty == Difficulty.litle) {
+                            badge = _buildTimelineBadge("LITTLE MORTAR", Colors.cyan.shade600, 'assets/badges/SU_BADGES_02.SVG');
+                          } else if (resep.difficulty == Difficulty.bumbu) {
+                            badge = _buildTimelineBadge("BUMBU BUDDY", Colors.pinkAccent, 'assets/badges/SU_BADGES_03.SVG');
+                          }
+                        }
+
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 75,
+                              child: Stack(
+                                alignment: Alignment.topCenter,
+                                children: [
+                                  _buildDashedLine(index, isLocked),
+                                  if (badge != null) badge,
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(top: badge != null ? 80 : 0, bottom: 20),
+                                child: _buildLevelCard(context, resep, isLocked, currentStars),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     );
-                  },
+                  }
                 ),
               ),
               _buildBottomNav(context),
@@ -206,7 +224,7 @@ class _LevelsScreenState extends State<LevelsScreen> {
   }
 
   // MODIFIKASI UTAMA PADA KARTU LEVEL (SUPAYA PRESISI)
-  Widget _buildLevelCard(BuildContext context, Recipe resep, bool isLocked) {
+  Widget _buildLevelCard(BuildContext context, Recipe resep, bool isLocked, int stars) {
     return GestureDetector(
       onTap: !isLocked
           ? () async {
@@ -257,7 +275,7 @@ class _LevelsScreenState extends State<LevelsScreen> {
                       Row(
                         children: List.generate(5, (i) => Icon(
                           Icons.star_rounded, size: 18,
-                          color: i < resep.stars ? Colors.orange : Colors.grey.shade200,
+                          color: i < stars ? Colors.orange : Colors.grey.shade200,
                         )),
                       ),
                     ],

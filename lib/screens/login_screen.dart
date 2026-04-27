@@ -188,9 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? 'Password too short'
                                   : null,
                             ),
-
-
-
+                            const SizedBox(height: 40),
                             // Tombol Log In
                             GestureDetector(
                               onTap: _handleLogin,
