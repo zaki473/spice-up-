@@ -115,9 +115,9 @@ class ScoreScreen extends StatelessWidget {
                 ),
               ),
 
-              const Text(
-                "GOOD JOB!",
-                style: TextStyle(
+              Text(
+                resep.stars < 2 ? "DON'T GIVE UP!" : "GOOD JOB!",
+                style: const TextStyle(
                   fontSize: 48, 
                   fontWeight: FontWeight.w900, 
                   color: Colors.orange,
@@ -130,7 +130,9 @@ class ScoreScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
                 child: Text(
-                  "You've mastered ${resep.title}! You can now view it in your Spice Journal.",
+                  resep.stars < 2 
+                    ? "Keep trying! Practice makes perfect. You'll master ${resep.title} soon."
+                    : "You've mastered ${resep.title}! You can now view it in your Spice Journal.",
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF4E342E)),
                 ),

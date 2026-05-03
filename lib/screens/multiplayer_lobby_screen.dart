@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
+import 'dart:async';
 
 import 'homepage_screen.dart';
 import 'levels_screen.dart';
-import 'spice_journal_screen.dart';// Pastikan import ini disesuaikan jika alamat path-nya salah
-// import '../constants/app_colors.dart';
+import 'spice_journal_screen.dart';
+import 'gameplay_screen.dart';
+import '../data/recipe_data.dart';
+import '../models/recipe_model.dart';
+import '../utils/size_config.dart';
 
 class MultiplayerLobbyScreen extends StatefulWidget {
   final String skinPath;
@@ -42,11 +46,14 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
   // States: 0 = Selection, 1 = Join Input, 2 = Inside Lobby
   int _viewState = 0;
   String _roomCode = "";
+  String _playerId = "";
   final TextEditingController _codeController = TextEditingController();
   
   // Data simulasi pemain di room
   List<Map<String, dynamic>> _players = [];
   bool _isHost = false;
+  bool _isGachaShowing = false;
+  StreamSubscription<DocumentSnapshot>? _roomSubscription;
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -66,9 +73,61 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
 
   @override
   void dispose() {
+    _roomSubscription?.cancel();
     _pulseController.dispose();
     _codeController.dispose();
     super.dispose();
+  }
+
+  void _listenToRoomStatus() {
+    _roomSubscription?.cancel();
+    _roomSubscription = FirebaseFirestore.instance.collection('rooms').doc(_roomCode).snapshots().listen((snapshot) {
+      if (snapshot.exists) {
+        var data = snapshot.data() as Map<String, dynamic>;
+        if (data['status'] == 'playing') {
+          int levelIndex = data['selectedLevelIndex'] ?? 0;
+          _showGachaAnimation(listResep[levelIndex]);
+        }
+      }
+    });
+  }
+
+  void _showGachaAnimation(Recipe selectedRecipe) async {
+    if (_isGachaShowing) return;
+    _isGachaShowing = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return const GachaAnimationDialog();
+      }
+    );
+
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (mounted) {
+      Navigator.pop(context); // close dialog
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => GameplayScreen(
+          resep: selectedRecipe, 
+          isMultiplayer: true,
+          roomCode: _roomCode,
+          playerId: _playerId,
+          skinPath: widget.skinPath,
+          eyePath: widget.eyePath,
+          mouthPath: widget.mouthPath,
+          nosePath: widget.nosePath,
+          browsPath: widget.browsPath,
+          hairPath: widget.hairPath,
+          bangsPath: widget.bangsPath,
+          shirtPath: widget.shirtPath,
+          shirtColor: widget.shirtColor,
+          hairStyle: widget.hairStyle,
+        )),
+      );
+    }
   }
 
   String _generateRoomCode() {
@@ -83,8 +142,10 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
     setState(() {
       _isHost = true;
       _roomCode = generatedCode;
+      _playerId = 'host_id_1';
       _viewState = 2; // Pindah layar dengan cepat menghindari kesan hang
     });
+    _listenToRoomStatus();
 
     try {
       final firestore = FirebaseFirestore.instance;
@@ -126,19 +187,22 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
       final firestore = FirebaseFirestore.instance;
       // Cek Validasi Kode
       var roomSnap = await firestore.collection('rooms').doc(enteredCode).get();
-      if (!roomSnap.exists) {
+      if (roomSnap.data()?['status'] == 'playing') {
         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Room Code tidak ditemukan!")));
         return;
       }
 
+      String myGuestID = "guest_${DateTime.now().millisecondsSinceEpoch}";
+
       setState(() {
         _isHost = false;
         _roomCode = enteredCode;
+        _playerId = myGuestID;
         _viewState = 2;
       });
+      _listenToRoomStatus();
 
       // Join sebagai Guest lengkap dengan Wajah
-      String myGuestID = "guest_${DateTime.now().millisecondsSinceEpoch}";
       await firestore.collection('rooms').doc(enteredCode).collection('players').doc(myGuestID).set({
         'name': 'Teman Baru',
         'isHost': false,
@@ -182,12 +246,12 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
           clipBehavior: Clip.none,
           children: [
             _renderAvatarPart(avatarData['skinPath'] ?? widget.skinPath, 350),
-            Positioned(top: -350 * 0.14, child: _renderAvatarPart(avatarData['hairPath'] ?? widget.hairPath, 350 * 1.14)),
+            Positioned(top: -350 * 0.19, child: _renderAvatarPart(avatarData['hairPath'] ?? widget.hairPath, 350 * 1.40)),
             Positioned(top: 350 * 0.20, child: _renderAvatarPart(avatarData['browsPath'] ?? widget.browsPath, 350 * 0.26)),
             Positioned(top: 350 * 0.25, child: _renderAvatarPart(avatarData['eyePath'] ?? widget.eyePath, 350 * 0.36)),
             Positioned(top: 350 * 0.41, child: _renderAvatarPart(avatarData['nosePath'] ?? widget.nosePath, 350 * 0.055)),
             Positioned(top: 350 * 0.50, child: _renderAvatarPart(avatarData['mouthPath'] ?? widget.mouthPath, 350 * 0.13)),
-            Positioned(top: -350 * 0.01, child: _renderAvatarPart(avatarData['bangsPath'] ?? widget.bangsPath, 350 * 0.48)),
+            Positioned(top: -350 * 0.05, child: _renderAvatarPart(avatarData['bangsPath'] ?? widget.bangsPath, 350 * 0.60)),
             Positioned(
               left: 0,
               right: 0,
@@ -214,7 +278,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
         shape: BoxShape.circle,
       ),
       child: Center(
-        child: Icon(icon, color: Colors.white, size: 40),
+        child: Icon(icon, color: Colors.white, size: 40.sp),
       ),
     );
   }
@@ -275,17 +339,17 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
 
   Widget _buildBottomNav(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      height: 70,
+      margin: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
+      height: 70.h,
       decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(35),
+          borderRadius: BorderRadius.circular(35.w),
           boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 15)]),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           IconButton(
-            icon: const Icon(Icons.home_outlined, color: Colors.grey, size: 30),
+            icon: Icon(Icons.home_outlined, color: Colors.grey, size: 30.w),
             onPressed: () => Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => HomepageScreen(
@@ -297,7 +361,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.play_circle_outline, color: Colors.grey, size: 30),
+            icon: Icon(Icons.play_circle_outline, color: Colors.grey, size: 30.w),
             onPressed: () => Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => LevelsScreen(
@@ -309,7 +373,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.menu_book_outlined, color: Colors.grey, size: 30),
+            icon: Icon(Icons.menu_book_outlined, color: Colors.grey, size: 30.w),
             onPressed: () => Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => SpiceJournalScreen(
@@ -320,7 +384,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
               )),
             ),
           ),
-          const Icon(Icons.person, color: Colors.orange, size: 32),
+          Icon(Icons.person, color: Colors.orange, size: 32.w),
         ],
       ),
     );
@@ -337,27 +401,27 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
     return KeyedSubtree(
       key: const ValueKey(0),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30),
+        padding: EdgeInsets.symmetric(horizontal: 30.w),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.sports_esports_rounded, size: 100, color: Colors.white),
-            const SizedBox(height: 20),
-            const Text(
+            Icon(Icons.sports_esports_rounded, size: 100.w, color: Colors.white),
+            SizedBox(height: 20.h),
+            Text(
               "SPICE DUEL",
               style: TextStyle(
-                fontSize: 36,
+                fontSize: 36.sp,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
-                letterSpacing: 2,
+                letterSpacing: 2.w,
               ),
             ),
-            const Text(
+            Text(
               "Tantang temanmu melihat siapa koki tercepat!",
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.white70),
+              style: TextStyle(fontSize: 16.sp, color: Colors.white70),
             ),
-            const SizedBox(height: 60),
+            SizedBox(height: 60.h),
             _buildBigButton(
               title: "CREATE ROOM",
               subtitle: "Bikin ruang baru dan jadi Host",
@@ -386,22 +450,22 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
     return KeyedSubtree(
       key: const ValueKey(1),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30),
+        padding: EdgeInsets.symmetric(horizontal: 30.w),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               "JOIN ROOM",
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.bold, color: Colors.white),
             ),
-            const SizedBox(height: 10),
-            const Text("Masukkan 5 digit kode ruangan temanmu:", style: TextStyle(color: Colors.white70)),
-            const SizedBox(height: 30),
+            SizedBox(height: 10.h),
+            Text("Masukkan 5 digit kode ruangan temanmu:", style: TextStyle(color: Colors.white70, fontSize: 14.sp)),
+            SizedBox(height: 30.h),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 5.h),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(15.w),
                 boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
               ),
               child: TextField(
@@ -409,7 +473,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
                 textAlign: TextAlign.center,
                 maxLength: 5,
                 textCapitalization: TextCapitalization.characters,
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.orange.shade900, letterSpacing: 10),
+                style: TextStyle(fontSize: 32.sp, fontWeight: FontWeight.bold, color: Colors.orange.shade900, letterSpacing: 10.w),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   counterText: "",
@@ -418,18 +482,18 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
                 ),
               ),
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40.h),
             SizedBox(
               width: double.infinity,
-              height: 60,
+              height: 60.h,
               child: ElevatedButton(
                 onPressed: _joinRoom,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange.shade900,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.w)),
                   elevation: 5,
                 ),
-                child: const Text("MASUK SEKARANG", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: Text("MASUK SEKARANG", style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
           ],
@@ -444,38 +508,38 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
       key: const ValueKey(2),
       child: Column(
         children: [
-          const SizedBox(height: 20),
-          const Text("ROOM CODE", style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 2)),
+          SizedBox(height: 20.h),
+          Text("ROOM CODE", style: TextStyle(color: Colors.white70, fontSize: 16.sp, fontWeight: FontWeight.w600, letterSpacing: 2.w)),
           ScaleTransition(
             scale: _pulseAnimation,
             child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              margin: EdgeInsets.symmetric(vertical: 10.h),
+              padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 15.h),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20.w),
                 boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 15, offset: Offset(0, 5))],
               ),
               child: Text(
                 _roomCode,
-                style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.orange.shade900, letterSpacing: 8),
+                style: TextStyle(fontSize: 48.sp, fontWeight: FontWeight.w900, color: Colors.orange.shade900, letterSpacing: 8.w),
               ),
             ),
           ),
-          const SizedBox(height: 10),
-          const Text("Menunggu pemain lain...", style: TextStyle(color: Colors.white, fontStyle: FontStyle.italic)),
+          SizedBox(height: 10.h),
+          Text("Menunggu pemain lain...", style: TextStyle(color: Colors.white, fontStyle: FontStyle.italic, fontSize: 14.sp)),
           
-          const SizedBox(height: 40),
+          SizedBox(height: 40.h),
           
           Expanded(
             child: Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(40.w)),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(25),
+                padding: EdgeInsets.all(25.w),
                 child: StreamBuilder<QuerySnapshot>(
                   stream: _roomCode.isNotEmpty 
                       ? FirebaseFirestore.instance.collection('rooms').doc(_roomCode).collection('players').snapshots()
@@ -487,17 +551,17 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("PLAYERS ($playerCount/4)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
-                        const SizedBox(height: 20),
+                        Text("PLAYERS ($playerCount/4)", style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
+                        SizedBox(height: 20.h),
                         Expanded(
                           child: snapshot.hasData 
                           ? GridView.builder(
                               physics: const BouncingScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2, 
                                 childAspectRatio: 0.8,
-                                crossAxisSpacing: 15,
-                                mainAxisSpacing: 15,
+                                crossAxisSpacing: 15.w,
+                                mainAxisSpacing: 15.h,
                               ),
                               itemCount: playerCount + (playerCount < 4 ? 1 : 0),
                               itemBuilder: (context, index) {
@@ -520,30 +584,35 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
                         
                         // Action Buttons Base on Role
                         if (_isHost) ...[
-                          const SizedBox(height: 15),
+                          SizedBox(height: 15.h),
                           SizedBox(
                             width: double.infinity,
-                            height: 65,
+                            height: 65.h,
                             child: ElevatedButton(
                               onPressed: () async {
-                                // Ganti status database jd Playing
-                                await FirebaseFirestore.instance.collection('rooms').doc(_roomCode).update({'status': 'playing'});
+                                int randomLevelIndex = Random().nextInt(listResep.length);
+                                await FirebaseFirestore.instance.collection('rooms').doc(_roomCode).update({
+                                  'status': 'playing',
+                                  'selectedLevelIndex': randomLevelIndex,
+                                  'startedAt': FieldValue.serverTimestamp(),
+                                  'durationSeconds': 60,
+                                });
                                 if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Broommm! Memulai Game...")));
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Memilih level acak...")));
                                 }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green.shade600,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.w)),
                                 elevation: 8,
                               ),
-                              child: const Text("START GAME", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.5)),
+                              child: Text("START GAME", style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.5.w)),
                             ),
                           ),
                         ] else ...[
-                          const SizedBox(height: 15),
+                          SizedBox(height: 15.h),
                           Center(
-                            child: Text("Menunggu Host memulai...", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange.shade700)),
+                            child: Text("Menunggu Host memulai...", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.orange.shade700)),
                           ),
                         ]
                       ],
@@ -563,14 +632,14 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
     return Container(
       decoration: BoxDecoration(
         color: isMe ? Colors.orange.shade50 : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isMe ? Colors.orange : Colors.grey.shade300, width: 2),
+        borderRadius: BorderRadius.circular(20.w),
+        border: Border.all(color: isMe ? Colors.orange : Colors.grey.shade300, width: 2.w),
       ),
       child: Column(
         children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.w),
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.orange.shade100,
@@ -583,10 +652,10 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(bottom: 15),
+            padding: EdgeInsets.only(bottom: 15.h),
             child: Text(
               player["name"],
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey.shade800),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp, color: Colors.grey.shade800),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -600,16 +669,16 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid, width: 2),
+        borderRadius: BorderRadius.circular(20.w),
+        border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid, width: 2.w),
       ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_add_disabled_rounded, size: 40, color: Colors.grey.shade400),
-            const SizedBox(height: 10),
-            Text("Waiting...", style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+            Icon(Icons.person_add_disabled_rounded, size: 40.w, color: Colors.grey.shade400),
+            SizedBox(height: 10.h),
+            Text("Waiting...", style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600, fontSize: 14.sp)),
           ],
         ),
       ),
@@ -621,24 +690,89 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> with Si
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+        padding: EdgeInsets.symmetric(vertical: 25.h, horizontal: 20.w),
         decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(20.w),
             boxShadow: const [BoxShadow(color: Colors.black26, offset: Offset(0, 8), blurRadius: 15)]),
         child: Row(
           children: [
-            Icon(icon, size: 50, color: textColor),
-            const SizedBox(width: 20),
+            Icon(icon, size: 50.w, color: textColor),
+            SizedBox(width: 20.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: textColor)),
-                  Text(subtitle, style: TextStyle(fontSize: 14, color: textColor.withOpacity(0.7))),
+                  Text(title, style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w900, color: textColor)),
+                  Text(subtitle, style: TextStyle(fontSize: 14.sp, color: textColor.withOpacity(0.7))),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class GachaAnimationDialog extends StatefulWidget {
+  const GachaAnimationDialog({super.key});
+
+  @override
+  State<GachaAnimationDialog> createState() => _GachaAnimationDialogState();
+}
+
+class _GachaAnimationDialogState extends State<GachaAnimationDialog> {
+  int _currentIndex = 0;
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      setState(() {
+        _currentIndex = Random().nextInt(listResep.length);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var resep = listResep[_currentIndex];
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.w),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Mengacak Level...", style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, color: Colors.orange)),
+            SizedBox(height: 20.h),
+            Container(
+              width: 150.w,
+              height: 150.w,
+              decoration: BoxDecoration(
+                color: resep.sunburstColor,
+                borderRadius: BorderRadius.circular(20.w),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20.w),
+                child: Image.asset(resep.imagePath, fit: BoxFit.cover),
+              ),
+            ),
+            SizedBox(height: 20.h),
+            Text(resep.title, style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
           ],
         ),
       ),

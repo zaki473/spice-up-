@@ -33,6 +33,7 @@ class ProfileSettingPage extends StatelessWidget {
   });
 
   void _editProfileData(BuildContext context, Map<String, dynamic> currentData) {
+    TextEditingController fullNameCtrl = TextEditingController(text: currentData['full_name'] ?? '');
     TextEditingController schoolCtrl = TextEditingController(text: currentData['school'] ?? '');
     TextEditingController birthdayCtrl = TextEditingController(text: currentData['birthday'] ?? '');
 
@@ -44,6 +45,7 @@ class ProfileSettingPage extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            TextField(controller: fullNameCtrl, decoration: const InputDecoration(labelText: "Full Name")),
             TextField(controller: schoolCtrl, decoration: const InputDecoration(labelText: "School")),
             TextField(controller: birthdayCtrl, decoration: const InputDecoration(labelText: "Birthday (DD/MM/YYYY)", hintText: "e.g., 23/12/2006")),
           ],
@@ -53,6 +55,7 @@ class ProfileSettingPage extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).set({
+                'full_name': fullNameCtrl.text.trim(),
                 'school': schoolCtrl.text.trim(),
                 'birthday': birthdayCtrl.text.trim(),
               }, SetOptions(merge: true));
@@ -300,7 +303,6 @@ class ProfileSettingPage extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 5),
-                            const Text("UID: @AnggunNat", style: TextStyle(fontSize: 10)),
                           ],
                         ),
                         const SizedBox(width: 15),
@@ -311,7 +313,7 @@ class ProfileSettingPage extends StatelessWidget {
                             builder: (context, snapshot) {
                               if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                               var data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
-                              String displayName = data['full_name'] ?? 'Full Name';
+                              String displayName = data['full_name'] ?? '-';
                               String email = FirebaseAuth.instance.currentUser!.email ?? '-';
                               String school = data['school'] ?? '-';
                               String birthday = data['birthday'] ?? '-';
@@ -351,11 +353,11 @@ class ProfileSettingPage extends StatelessWidget {
                                         if (unlockedBadges.isEmpty)
                                           const Text("No badges yet", style: TextStyle(fontSize: 10, color: Colors.grey, fontStyle: FontStyle.italic)),
                                         if (unlockedBadges.contains("SPICE SPROUT"))
-                                          Padding(padding: const EdgeInsets.only(right: 10), child: _buildSvgBadge('assets/badges/SU_BADGES_01.SVG', Colors.orange.shade800, "SPICE SPROUT")),
+                                          Padding(padding: const EdgeInsets.only(right: 10), child: _buildSvgBadge('assets/badges/SU_BADGES_01.svg', Colors.orange.shade800, "SPICE SPROUT")),
                                         if (unlockedBadges.contains("LITTLE MORTAR"))
-                                          Padding(padding: const EdgeInsets.only(right: 10), child: _buildSvgBadge('assets/badges/SU_BADGES_02.SVG', Colors.cyan.shade600, "LITTLE MORTAR")),
+                                          Padding(padding: const EdgeInsets.only(right: 10), child: _buildSvgBadge('assets/badges/SU_BADGES_02.svg', Colors.cyan.shade600, "LITTLE MORTAR")),
                                         if (unlockedBadges.contains("BUMBU BUDDY"))
-                                          Padding(padding: const EdgeInsets.only(right: 10), child: _buildSvgBadge('assets/badges/SU_BADGES_03.SVG', Colors.pinkAccent, "BUMBU BUDDY")),
+                                          Padding(padding: const EdgeInsets.only(right: 10), child: _buildSvgBadge('assets/badges/SU_BADGES_03.svg', Colors.pinkAccent, "BUMBU BUDDY")),
                                       ],
                                     ),
                                   ),

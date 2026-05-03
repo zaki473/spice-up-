@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/recipe_model.dart';
 import 'score_screen.dart';
+import 'multiplayer_score_screen.dart';
 import 'levels_screen.dart';
 import 'profile_screen.dart'; // pastikan import ini ada
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,19 +12,247 @@ import '../data/recipe_data.dart';
 
 class GameplayScreen extends StatefulWidget {
   final Recipe resep;
-  const GameplayScreen({super.key, required this.resep});
+  final bool isMultiplayer;
+  final String? roomCode;
+  final String? playerId;
+  final String skinPath;
+  final String eyePath;
+  final String mouthPath;
+  final String nosePath;
+  final String browsPath;
+  final String hairPath;
+  final String bangsPath;
+  final String shirtPath;
+  final Color shirtColor;
+  final IconData hairStyle;
+
+  const GameplayScreen({
+    super.key, 
+    required this.resep, 
+    this.isMultiplayer = false,
+    this.roomCode,
+    this.playerId,
+    this.skinPath = 'assets/images/avatar/skin/SKIN_01.svg',
+    this.eyePath = 'assets/images/avatar/eyes/EYE_01.svg',
+    this.mouthPath = 'assets/images/avatar/mouth/MOUTH_01.svg',
+    this.nosePath = 'assets/images/avatar/nose/NOSE_01.svg',
+    this.browsPath = 'assets/images/avatar/brows/BROW_01.svg',
+    this.hairPath = 'assets/images/avatar/hair/HAIR_01.svg',
+    this.bangsPath = 'assets/images/avatar/bangs/BANGS_01.svg',
+    this.shirtPath = 'assets/images/avatar/shirt/SHIRT_01.svg',
+    this.shirtColor = Colors.orange,
+    this.hairStyle = Icons.person,
+  });
 
   @override
   State<GameplayScreen> createState() => _GameplayScreenState();
 }
 
-class _GameplayScreenState extends State<GameplayScreen> {
+class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObserver {
   int currentIndex = 0;
   int score = 0;
   
   // Variable baru untuk mengontrol feedback jawaban
   int? selectedAnswerIndex;
   bool isAnswering = false;
+
+  int _timeLeft = 60;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (widget.isMultiplayer) {
+      _startTimer();
+    }
+  }
+
+  void _startTimer() async {
+    if (widget.isMultiplayer && widget.roomCode != null) {
+      try {
+        var roomSnap = await FirebaseFirestore.instance.collection('rooms').doc(widget.roomCode).get();
+        if (roomSnap.exists && mounted) {
+          var data = roomSnap.data()!;
+          Timestamp? startedAt = data['startedAt'];
+          int duration = data['durationSeconds'] ?? 60;
+          if (startedAt != null) {
+            int elapsed = DateTime.now().difference(startedAt.toDate()).inSeconds;
+            setState(() {
+              _timeLeft = duration - elapsed;
+              if (_timeLeft < 0) _timeLeft = 0;
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint("Error fetching timer: $e");
+      }
+    }
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      if (_timeLeft > 0) {
+        setState(() {
+          _timeLeft--;
+        });
+      } else {
+        _timer?.cancel();
+        _endGame();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
+    if (widget.isMultiplayer && widget.roomCode != null && widget.playerId != null) {
+      _markAsAfk(true);
+    }
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (widget.isMultiplayer && widget.roomCode != null && widget.playerId != null) {
+      if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+        _markAsAfk(true);
+      } else if (state == AppLifecycleState.resumed) {
+        _markAsAfk(false);
+      }
+    }
+  }
+
+  Future<void> _markAsAfk(bool isAfk) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('rooms')
+          .doc(widget.roomCode)
+          .collection('players')
+          .doc(widget.playerId)
+          .update({'isAfk': isAfk});
+    } catch (e) {
+      debugPrint("Error updating AFK state: $e");
+    }
+  }
+
+  void _endGame() async {
+    if (widget.isMultiplayer && widget.roomCode != null && widget.playerId != null) {
+      try {
+        await FirebaseFirestore.instance.collection('rooms').doc(widget.roomCode)
+           .collection('players').doc(widget.playerId).update({
+           'isFinished': true,
+           'finishedAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint("Error updating finished state: $e");
+      }
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MultiplayerScoreScreen(
+            score: score,
+            roomCode: widget.roomCode!,
+            playerId: widget.playerId!,
+            skinPath: widget.skinPath,
+            eyePath: widget.eyePath,
+            mouthPath: widget.mouthPath,
+            nosePath: widget.nosePath,
+            browsPath: widget.browsPath,
+            hairPath: widget.hairPath,
+            bangsPath: widget.bangsPath,
+            shirtPath: widget.shirtPath,
+            shirtColor: widget.shirtColor,
+            hairStyle: widget.hairStyle,
+          ),
+        ),
+      );
+      return;
+    }
+
+    // ORIGINAL SINGLE-PLAYER LOGIC
+    int totalSoal = widget.resep.questions.length;
+    int maxScore = totalSoal * 10;
+    double starCalculation = (score / maxScore) * 5;
+    int finalStars = starCalculation.round();
+    if (score > 0 && finalStars == 0) finalStars = 1;
+    widget.resep.stars = finalStars;
+
+    // UPDATE TO FIRESTORE
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      
+      try {
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          DocumentSnapshot snapshot = await transaction.get(userRef);
+          if (!snapshot.exists) return;
+          
+          Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
+          
+          // Update Progress
+          Map<String, dynamic> progress = data['progress'] is Map ? Map<String, dynamic>.from(data['progress']) : {};
+          int currentStars = progress[widget.resep.title] ?? 0;
+          if (finalStars > currentStars) {
+            progress[widget.resep.title] = finalStars;
+          }
+
+          // Update Recently Played
+          List<dynamic> recent = data['recently_played'] is List ? List<dynamic>.from(data['recently_played']) : [];
+          recent.remove(widget.resep.title);
+          recent.insert(0, widget.resep.title);
+          if (recent.length > 4) recent = recent.sublist(0, 4);
+
+          // Update Badges
+          List<dynamic> badges = data['unlocked_badges'] is List ? List<dynamic>.from(data['unlocked_badges']) : [];
+          int recipeIndex = listResep.indexOf(widget.resep);
+          
+          if (finalStars > 0) {
+            if (recipeIndex == 0 && !badges.contains("SPICE SPROUT")) {
+              badges.add("SPICE SPROUT");
+            } else if (recipeIndex > 0 && widget.resep.difficulty != listResep[recipeIndex - 1].difficulty) {
+              if (widget.resep.difficulty == Difficulty.litle && !badges.contains("LITTLE MORTAR")) {
+                badges.add("LITTLE MORTAR");
+              } else if (widget.resep.difficulty == Difficulty.bumbu && !badges.contains("BUMBU BUDDY")) {
+                badges.add("BUMBU BUDDY");
+              }
+            }
+          }
+
+          transaction.set(userRef, {
+            'progress': progress,
+            'recently_played': recent,
+            'unlocked_badges': badges,
+          }, SetOptions(merge: true));
+        });
+      } catch (e) {
+        debugPrint("Failed to update progress: $e");
+      }
+    }
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ScoreScreen(
+          score: score, 
+          resep: widget.resep,
+          skinPath: widget.skinPath,
+          eyePath: widget.eyePath,
+          mouthPath: widget.mouthPath,
+          nosePath: widget.nosePath,
+          browsPath: widget.browsPath,
+          hairPath: widget.hairPath,
+          bangsPath: widget.bangsPath,
+          shirtPath: widget.shirtPath,
+          shirtColor: widget.shirtColor,
+          hairStyle: widget.hairStyle,
+        ),
+      ),
+    );
+  }
 
   Widget _buildQuizImage(String path) {
     if (path.endsWith('.svg')) {
@@ -59,6 +289,22 @@ class _GameplayScreenState extends State<GameplayScreen> {
     // Cek jika benar
     if (index == widget.resep.questions[currentIndex].correctAnswerIndex) {
       score += 10;
+      if (widget.isMultiplayer && widget.roomCode != null && widget.playerId != null) {
+        double progress = ((currentIndex + 1) / widget.resep.questions.length) * 100;
+        FirebaseFirestore.instance.collection('rooms').doc(widget.roomCode)
+           .collection('players').doc(widget.playerId).update({
+           'score': FieldValue.increment(10),
+           'progress': progress,
+        });
+      }
+    } else {
+      if (widget.isMultiplayer && widget.roomCode != null && widget.playerId != null) {
+        double progress = ((currentIndex + 1) / widget.resep.questions.length) * 100;
+        FirebaseFirestore.instance.collection('rooms').doc(widget.roomCode)
+           .collection('players').doc(widget.playerId).update({
+           'progress': progress,
+        });
+      }
     }
 
     // Beri jeda 1.5 detik agar user bisa melihat jawaban yang benar/salah
@@ -74,72 +320,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
       });
     } else {
       // Game Selesai
-      int totalSoal = widget.resep.questions.length;
-      int maxScore = totalSoal * 10;
-      double starCalculation = (score / maxScore) * 5;
-      int finalStars = starCalculation.round();
-      if (score > 0 && finalStars == 0) finalStars = 1;
-      widget.resep.stars = finalStars;
-
-      // UPDATE TO FIRESTORE
-      final User? user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-        
-        try {
-          await FirebaseFirestore.instance.runTransaction((transaction) async {
-            DocumentSnapshot snapshot = await transaction.get(userRef);
-            if (!snapshot.exists) return;
-            
-            Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-            
-            // Update Progress
-            Map<String, dynamic> progress = data['progress'] is Map ? Map<String, dynamic>.from(data['progress']) : {};
-            int currentStars = progress[widget.resep.title] ?? 0;
-            if (finalStars > currentStars) {
-              progress[widget.resep.title] = finalStars;
-            }
-
-            // Update Recently Played
-            List<dynamic> recent = data['recently_played'] is List ? List<dynamic>.from(data['recently_played']) : [];
-            recent.remove(widget.resep.title);
-            recent.insert(0, widget.resep.title);
-            if (recent.length > 4) recent = recent.sublist(0, 4);
-
-            // Update Badges
-            List<dynamic> badges = data['unlocked_badges'] is List ? List<dynamic>.from(data['unlocked_badges']) : [];
-            int recipeIndex = listResep.indexOf(widget.resep);
-            
-            if (finalStars > 0) {
-              if (recipeIndex == 0 && !badges.contains("SPICE SPROUT")) {
-                badges.add("SPICE SPROUT");
-              } else if (recipeIndex > 0 && widget.resep.difficulty != listResep[recipeIndex - 1].difficulty) {
-                if (widget.resep.difficulty == Difficulty.litle && !badges.contains("LITTLE MORTAR")) {
-                  badges.add("LITTLE MORTAR");
-                } else if (widget.resep.difficulty == Difficulty.bumbu && !badges.contains("BUMBU BUDDY")) {
-                  badges.add("BUMBU BUDDY");
-                }
-              }
-            }
-
-            transaction.set(userRef, {
-              'progress': progress,
-              'recently_played': recent,
-              'unlocked_badges': badges,
-            }, SetOptions(merge: true));
-          });
-        } catch (e) {
-          debugPrint("Failed to update progress: $e");
-        }
-      }
-
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ScoreScreen(score: score, resep: widget.resep),
-        ),
-      );
+      _timer?.cancel();
+      _endGame();
     }
   }
 
@@ -162,6 +344,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
             children: [
               _buildCustomHeader(),
               const SizedBox(height: 10),
+              if (widget.isMultiplayer) _buildTimer(),
               Text(
                 "QUESTION ${currentIndex + 1}",
                 textAlign: TextAlign.center,
@@ -309,6 +492,24 @@ class _GameplayScreenState extends State<GameplayScreen> {
     );
   }
 
+  Widget _buildTimer() {
+    bool isDanger = _timeLeft <= 10;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDanger ? Colors.red : Colors.orange,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
+      ),
+      child: Text(
+        "$_timeLeft s",
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+      ),
+    );
+  }
+
   // --- HEADER DENGAN NAVIGASI KE PROFILE ---
   Widget _buildCustomHeader() {
     return Padding(
@@ -321,16 +522,16 @@ class _GameplayScreenState extends State<GameplayScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => ProfileSettingPage(
-                  skinPath: 'assets/images/skin/SU_AVATAR_SKIN01.svg',
-                  eyePath: 'assets/images/eye/SU_AVATAR_EYE1.svg',
-                  mouthPath: 'assets/images/mouth/SU_AVATAR_MOUTH1.svg',
-                  nosePath: 'assets/images/nose/SU_AVATAR_NOSE1.svg',
-                  browsPath: 'assets/images/brows/SU_AVATAR_BROWS1.svg',
-                  hairPath: 'assets/images/hair/SU_AVATAR_HAIR1.png',
-                  bangsPath: 'assets/images/bangs/SU_AVATAR_BANGS1.svg',
-                  shirtPath: 'assets/images/top/SU_AVATAR_TOP1.png',
-                  shirtColor: Colors.orange,
-                  hairStyle: Icons.person,
+                  skinPath: widget.skinPath,
+                  eyePath: widget.eyePath,
+                  mouthPath: widget.mouthPath,
+                  nosePath: widget.nosePath,
+                  browsPath: widget.browsPath,
+                  hairPath: widget.hairPath,
+                  bangsPath: widget.bangsPath,
+                  shirtPath: widget.shirtPath,
+                  shirtColor: widget.shirtColor,
+                  hairStyle: widget.hairStyle,
                 )),
               );
             },

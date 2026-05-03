@@ -50,7 +50,22 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: "^0.13.1"
+  flutter_native_splash: "^2.4.0"
 
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo.png" # Path ke logo baru Anda
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#FF8D2A" # Warna background splash (misal: Orange)
+  image: assets/images/logo.png # Logo yang akan tampil di tengah
+  android_12:
+    image: assets/images/logo.png
+    color: "#FF8D2A"
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -65,6 +80,7 @@ flutter:
   assets:
   # Daftar semua aset yang digunakan dalam aplikasi
     # bagian logo dan kulit
+    - assets/images/logo.png
     - assets/images/logo_dan_bg/SU_MAIN_BG01.svg
     - assets/images/logo_dan_bg/SU_TYPEFACE.svg
     - assets/images/skin/SU_AVATAR_SKIN01.svg
@@ -115,25 +131,25 @@ flutter:
     - assets/images/top/SU_AVATAR_TOP3.png
     - assets/images/top/SU_AVATAR_TOP4.png
     # bagian badges
-    - assets/badges/SU_BADGES_01.SVG
-    - assets/badges/SU_BADGES_02.SVG
-    - assets/badges/SU_BADGES_03.SVG
+    - assets/badges/SU_BADGES_01.svg
+    - assets/badges/SU_BADGES_02.svg
+    - assets/badges/SU_BADGES_03.svg
     # bagian resep  
-    - assets/food/SU_FOOD_01_MI_GOMAK.PNG
-    - assets/food/SU_FOOD_01_IKAN_KUAH_KUNING.PNG
-    - assets/food/SU_FOOD_02_AYAM_TALIWANG.PNG
-    - assets/food/SU_FOOD_02_PAPEDA.PNG
-    - assets/food/SU_FOOD_02_TINUTUAN.PNG
-    - assets/food/SU_FOOD_03_ARSIK.PNG
-    - assets/food/SU_FOOD_03_AYAMBETUTU.PNG
+    - assets/food/SU_FOOD_01_MI_GOMAK.png
+    - assets/food/SU_FOOD_01_IKAN_KUAH_KUNING.png
+    - assets/food/SU_FOOD_02_AYAM_TALIWANG.png
+    - assets/food/SU_FOOD_02_PAPEDA.png
+    - assets/food/SU_FOOD_02_TINUTUAN.png
+    - assets/food/SU_FOOD_03_ARSIK.png
+    - assets/food/SU_FOOD_03_AYAMBETUTU.png
     - assets/food/SU_FOOD_03_COTOMAKASSAR.png
     # bagian stars
-    - assets/stars/SU_ICONS_01.SVG
-    - assets/stars/SU_ICONS_02.SVG
+    - assets/stars/SU_ICONS_01.svg
+    - assets/stars/SU_ICONS_02.svg
     # bagian quiz
-    - assets/quiz/SPC_ANDALIMAN.PNG
-    - assets/quiz/SPC_BAYLEAVES.PNG
-    - assets/quiz/SPC_CANDLENUT.PNG
+    - assets/quiz/SPC_ANDALIMAN.png
+    - assets/quiz/SPC_BAYLEAVES.png
+    - assets/quiz/SPC_CANDLENUT.png
     - assets/quiz/SPC_CHILI.png
     - assets/quiz/SPC_CORIANDER.png
     - assets/quiz/SPC_CUMIN.png

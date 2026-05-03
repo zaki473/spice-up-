@@ -9,6 +9,7 @@ import 'spice_journal_screen.dart';
 import 'profile_screen.dart';
 import '../data/recipe_data.dart';
 import '../models/recipe_model.dart';
+import 'gameplay_screen.dart';
 
 class HomepageScreen extends StatefulWidget {
   final String skinPath;
@@ -41,11 +42,9 @@ class HomepageScreen extends StatefulWidget {
 }
 
 class _HomepageScreenState extends State<HomepageScreen> {
-  // Controller untuk menangkap input pencarian
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
-  // Fungsi Helper Render Gambar
   Widget _renderPart(String path, double size) {
     if (path.isEmpty) return const SizedBox();
     if (path.toLowerCase().endsWith('.svg')) {
@@ -100,17 +99,18 @@ class _HomepageScreenState extends State<HomepageScreen> {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        _searchQuery.isEmpty ? 'Recently Played' : 'Search Results',
+                        _searchQuery.isEmpty
+                            ? 'Recently Played'
+                            : 'Search Results',
                         style: const TextStyle(
-                          fontSize: 18, 
-                          fontWeight: FontWeight.bold, 
-                          color: Color(0xFFD35400)
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFD35400),
                         ),
                       ),
                     ),
                   ),
 
-                  // --- RECIPE GRID DENGAN LOGIKA FILTER ---
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -121,63 +121,143 @@ class _HomepageScreenState extends State<HomepageScreen> {
                             .snapshots(),
                         builder: (context, snapshot) {
                           List<Recipe> displayRecipes = [];
+                          List<Recipe> recentRecipes = [];
 
-                          if (_searchQuery.isEmpty) {
-                            // Logika Default: Recently Played
-                            if (snapshot.hasData && snapshot.data!.exists) {
-                              Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
-                              List<dynamic> recentTitles = data['recently_played'] is List ? data['recently_played'] : [];
-                              
-                              for (var title in recentTitles) {
-                                try {
-                                  displayRecipes.add(listResep.firstWhere((r) => r.title == title));
-                                } catch (e) { /* Ignore */ }
+                          // Mengambil semua resep yang pernah dimainkan terlebih dahulu
+                          if (snapshot.hasData && snapshot.data!.exists) {
+                            Map<String, dynamic> data =
+                                snapshot.data!.data() as Map<String, dynamic>;
+                            List<dynamic> recentTitles =
+                                data['recently_played'] is List
+                                ? data['recently_played']
+                                : [];
+
+                            for (var title in recentTitles) {
+                              try {
+                                recentRecipes.add(
+                                  listResep.firstWhere((r) => r.title == title),
+                                );
+                              } catch (e) {
+                                /* Ignore */
                               }
                             }
-                            // Fallback jika recently played kosong
-                            if (displayRecipes.isEmpty) {
-                              displayRecipes = [listResep[0], listResep[1], listResep[7], listResep[5]];
-                            }
+                          }
+
+                          // Menerapkan logika: jika _searchQuery kosong, tampilkan semua recent.
+                          // Jika berisi, lakukan filter dari resep yang sudah dimainkan (bukan dari keseluruhan listResep)
+                          if (_searchQuery.isEmpty) {
+                            displayRecipes = recentRecipes;
                           } else {
-                            // Logika Cari: Filter berdasarkan Nama
-                            displayRecipes = listResep.where((recipe) {
-                              return recipe.title.toLowerCase().contains(_searchQuery.toLowerCase());
+                            displayRecipes = recentRecipes.where((recipe) {
+                              return recipe.title.toLowerCase().contains(
+                                _searchQuery.toLowerCase(),
+                              );
                             }).toList();
                           }
 
                           if (displayRecipes.isEmpty) {
-                             return const Center(child: Text("No recipes found."));
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _searchQuery.isEmpty
+                                        ? Icons.sports_esports
+                                        : Icons.search_off,
+                                    size: 60,
+                                    color: Colors.orange.shade300,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    _searchQuery.isEmpty
+                                        ? "Belum ada resep yang dimainkan"
+                                        : "Resep tidak ditemukan",
+                                    style: TextStyle(
+                                      color: Colors.orange.shade800,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  if (_searchQuery.isEmpty)
+                                    Text(
+                                      "Ayo mainkan sekarang!",
+                                      style: TextStyle(
+                                        color: Colors.orange.shade600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
                           }
 
                           return GridView.builder(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
-                              childAspectRatio: 0.78,
-                            ),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 14,
+                                  mainAxisSpacing: 14,
+                                  childAspectRatio: 0.78,
+                                ),
                             itemCount: displayRecipes.length,
                             itemBuilder: (context, index) {
                               final resep = displayRecipes[index];
                               int resepStars = 0;
-                              
+
                               if (snapshot.hasData && snapshot.data!.exists) {
-                                Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
-                                Map<String, dynamic> progress = data['progress'] is Map ? Map<String, dynamic>.from(data['progress']) : {};
+                                Map<String, dynamic> data =
+                                    snapshot.data!.data()
+                                        as Map<String, dynamic>;
+                                Map<String, dynamic> progress =
+                                    data['progress'] is Map
+                                    ? Map<String, dynamic>.from(
+                                        data['progress'],
+                                      )
+                                    : {};
                                 resepStars = progress[resep.title] ?? 0;
                               }
-                              
-                              return _buildRecipeCard(context, resep.title, resep.subtitle, resepStars, resep.imagePath);
+
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => GameplayScreen(
+                                        resep: resep,
+                                        skinPath: widget.skinPath,
+                                        eyePath: widget.eyePath,
+                                        mouthPath: widget.mouthPath,
+                                        nosePath: widget.nosePath,
+                                        browsPath: widget.browsPath,
+                                        hairPath: widget.hairPath,
+                                        bangsPath: widget.bangsPath,
+                                        shirtPath: widget.shirtPath,
+                                        shirtColor: widget.shirtColor,
+                                        hairStyle: widget.hairStyle,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: _buildRecipeCard(
+                                  context,
+                                  resep.title,
+                                  resep.subtitle,
+                                  resepStars,
+                                  resep.imagePath,
+                                ),
+                              );
                             },
                           );
-                        }
+                        },
                       ),
                     ),
                   ),
                   const SizedBox(height: 90),
                 ],
               ),
-              Align(alignment: Alignment.bottomCenter, child: _buildBottomNav(context)),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: _buildBottomNav(context),
+              ),
             ],
           ),
         ),
@@ -199,7 +279,10 @@ class _HomepageScreenState extends State<HomepageScreen> {
               child: Icon(Icons.person, color: Colors.orange),
             ),
           ),
-          SvgPicture.asset('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: 100),
+          SvgPicture.asset(
+            'assets/images/logo_dan_bg/SU_TYPEFACE.svg',
+            width: 100,
+          ),
         ],
       ),
     );
@@ -299,12 +382,31 @@ class _HomepageScreenState extends State<HomepageScreen> {
     );
   }
 
-  Widget _buildMiniInfo(String label, String value) {
+  Widget _buildMiniInfo(String label, String value, {bool isRight = false}) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: isRight
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 8, color: Colors.grey)),
-        Text(value, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey.shade500,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: Colors.black87,
+          ),
+        ),
       ],
     );
   }
@@ -313,7 +415,10 @@ class _HomepageScreenState extends State<HomepageScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       child: Container(
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(25)),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25),
+        ),
         child: TextField(
           controller: _searchController,
           onChanged: (value) {
@@ -324,14 +429,17 @@ class _HomepageScreenState extends State<HomepageScreen> {
           decoration: InputDecoration(
             hintText: 'Search Recipes...',
             prefixIcon: const Icon(Icons.search, color: Colors.orange),
-            suffixIcon: _searchQuery.isNotEmpty 
-              ? IconButton(
-                  icon: const Icon(Icons.clear, size: 20), 
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() { _searchQuery = ""; });
-                  }) 
-              : null,
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = "";
+                      });
+                    },
+                  )
+                : null,
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
@@ -340,13 +448,25 @@ class _HomepageScreenState extends State<HomepageScreen> {
     );
   }
 
-  Widget _buildRecipeCard(BuildContext context, String title, String subtitle, int stars, String imagePath) {
+  Widget _buildRecipeCard(
+    BuildContext context,
+    String title,
+    String subtitle,
+    int stars,
+    String imagePath,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.orange.shade100),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -355,10 +475,21 @@ class _HomepageScreenState extends State<HomepageScreen> {
             child: Container(
               width: double.infinity,
               margin: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: const Color(0xFFFFEBD2), borderRadius: BorderRadius.circular(15)),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBD2),
+                borderRadius: BorderRadius.circular(15),
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(15),
-                child: Image.asset(imagePath, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.fastfood, color: Colors.orange, size: 40)),
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) => const Icon(
+                    Icons.fastfood,
+                    color: Colors.orange,
+                    size: 40,
+                  ),
+                ),
               ),
             ),
           ),
@@ -370,20 +501,49 @@ class _HomepageScreenState extends State<HomepageScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF3E2723)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text(subtitle, style: const TextStyle(fontSize: 10, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF3E2723),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(children: List.generate(5, (i) => Icon(Icons.star, size: 12, color: i < stars ? Colors.orange : Colors.grey.shade300))),
-                      const Icon(Icons.play_circle_fill, color: Colors.orange, size: 24),
+                      Row(
+                        children: List.generate(
+                          5,
+                          (i) => Icon(
+                            Icons.star,
+                            size: 12,
+                            color: i < stars
+                                ? Colors.orange
+                                : Colors.grey.shade300,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.play_circle_fill,
+                        color: Colors.orange,
+                        size: 24,
+                      ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -393,22 +553,73 @@ class _HomepageScreenState extends State<HomepageScreen> {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       height: 70,
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(35), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(35),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           const Icon(Icons.home, color: Colors.orange, size: 30),
           IconButton(
-            icon: const Icon(Icons.play_circle_outline, color: Colors.grey), 
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => LevelsScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor, hairStyle: widget.hairStyle)))
+            icon: const Icon(Icons.play_circle_outline, color: Colors.grey),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (c) => LevelsScreen(
+                  skinPath: widget.skinPath,
+                  eyePath: widget.eyePath,
+                  mouthPath: widget.mouthPath,
+                  nosePath: widget.nosePath,
+                  browsPath: widget.browsPath,
+                  hairPath: widget.hairPath,
+                  bangsPath: widget.bangsPath,
+                  shirtPath: widget.shirtPath,
+                  shirtColor: widget.shirtColor,
+                  hairStyle: widget.hairStyle,
+                ),
+              ),
+            ),
           ),
           IconButton(
-            icon: const Icon(Icons.menu_book, color: Colors.grey), 
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => SpiceJournalScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor, hairStyle: widget.hairStyle)))
+            icon: const Icon(Icons.menu_book, color: Colors.grey),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (c) => SpiceJournalScreen(
+                  skinPath: widget.skinPath,
+                  eyePath: widget.eyePath,
+                  mouthPath: widget.mouthPath,
+                  nosePath: widget.nosePath,
+                  browsPath: widget.browsPath,
+                  hairPath: widget.hairPath,
+                  bangsPath: widget.bangsPath,
+                  shirtPath: widget.shirtPath,
+                  shirtColor: widget.shirtColor,
+                  hairStyle: widget.hairStyle,
+                ),
+              ),
+            ),
           ),
           IconButton(
-            icon: const Icon(Icons.person_outline, color: Colors.grey), 
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => MultiplayerLobbyScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor))),
+            icon: const Icon(Icons.person_outline, color: Colors.grey),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (c) => MultiplayerLobbyScreen(
+                  skinPath: widget.skinPath,
+                  eyePath: widget.eyePath,
+                  mouthPath: widget.mouthPath,
+                  nosePath: widget.nosePath,
+                  browsPath: widget.browsPath,
+                  hairPath: widget.hairPath,
+                  bangsPath: widget.bangsPath,
+                  shirtPath: widget.shirtPath,
+                  shirtColor: widget.shirtColor,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -417,7 +628,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose(); // Bersihkan memory controller
+    _searchController.dispose();
     super.dispose();
   }
 }

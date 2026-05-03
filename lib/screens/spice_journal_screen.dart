@@ -55,6 +55,32 @@ class SpiceJournalScreen extends StatefulWidget {
 class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  String _searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query;
+      _currentPage = 0;
+      if (_pageController.hasClients) {
+         _pageController.jumpToPage(0);
+      }
+    });
+  }
+
+  List<SpiceInfo> get _filteredJournalData {
+    if (_searchQuery.isEmpty) return journalData;
+    return journalData
+        .where((spice) => spice.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
+  }
 
   // DATA BUMBU SESUAI GAMBAR ASSETS KAMU
   final List<SpiceInfo> journalData = [
@@ -157,8 +183,10 @@ class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
   ];
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // Tambahkan baris ini untuk mencegah layout berubah saat keyboard muncul
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
@@ -180,17 +208,24 @@ class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    PageView.builder(
-                      controller: _pageController,
-                      onPageChanged: (index) => setState(() => _currentPage = index),
-                      itemCount: journalData.length,
-                      itemBuilder: (context, index) {
-                        return _buildClipboardItem(journalData[index]);
-                      },
-                    ),
+                    _filteredJournalData.isEmpty
+                        ? const Center(
+                            child: Text(
+                              "No spice found.",
+                              style: TextStyle(fontSize: 18, color: Colors.brown, fontWeight: FontWeight.bold),
+                            ),
+                          )
+                        : PageView.builder(
+                            controller: _pageController,
+                            onPageChanged: (index) => setState(() => _currentPage = index),
+                            itemCount: _filteredJournalData.length,
+                            itemBuilder: (context, index) {
+                              return _buildClipboardItem(_filteredJournalData[index]);
+                            },
+                          ),
                     
                     // Tombol Panah Kiri
-                    if (_currentPage > 0)
+                    if (_currentPage > 0 && _filteredJournalData.isNotEmpty)
                       Positioned(
                         left: 15,
                         child: IconButton(
@@ -200,7 +235,7 @@ class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
                       ),
                     
                     // Tombol Panah Kanan
-                    if (_currentPage < journalData.length - 1)
+                    if (_currentPage < _filteredJournalData.length - 1 && _filteredJournalData.isNotEmpty)
                       Positioned(
                         right: 15,
                         child: IconButton(
@@ -215,7 +250,10 @@ class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
               // Indikator Halaman (Dots)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Text("${_currentPage + 1} / ${journalData.length}", 
+                child: Text(
+                  _filteredJournalData.isEmpty 
+                      ? "0 / 0" 
+                      : "${_currentPage + 1} / ${_filteredJournalData.length}", 
                   style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.brown)),
               ),
 
@@ -362,6 +400,8 @@ class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: TextField(
+        controller: _searchController,
+        onChanged: _onSearchChanged,
         decoration: InputDecoration(
           hintText: "Search spice...",
           prefixIcon: const Icon(Icons.search, color: Colors.orange),
