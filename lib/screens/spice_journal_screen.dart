@@ -180,6 +180,12 @@ class _SpiceJournalScreenState extends State<SpiceJournalScreen> {
       description: "Responsible for the bright yellow color in dishes and provides a mild, earthy, and warm flavor.", 
       origin: "Southeast Asia"
     ),
+    SpiceInfo(
+      name: "BASIL", 
+      imagePath: 'assets/quiz/SPC_BASIL.png', 
+      description: "Known as 'Kemangi,' it has a strong, sweet aroma and is often used fresh to add a refreshing flavor.", 
+      origin: "Southeast Asia"
+    ),
   ];
 
   @override
