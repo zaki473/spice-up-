@@ -86,6 +86,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
           ),
         ),
         child: SafeArea(
+          
           child: Stack(
             children: [
               Column(
@@ -289,6 +290,9 @@ class _HomepageScreenState extends State<HomepageScreen> {
   }
 
   Widget _buildProfileCard(BuildContext context) {
+    // Ukuran dasar avatar agar proporsinya konsisten dengan kustomisasi
+    double avatarSize = 350; 
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: InkWell(
@@ -319,48 +323,82 @@ class _HomepageScreenState extends State<HomepageScreen> {
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
                     child: SizedBox(
-                      width: 350,
-                      height: 350,
+                      width: avatarSize,
+                      height: avatarSize,
                       child: Stack(
                         alignment: Alignment.center,
                         clipBehavior: Clip.none,
                         children: [
-                          _renderPart(widget.skinPath, 350),
+                          // BASE - Menggunakan widget.skinPath
+                          _renderPart(widget.skinPath, avatarSize),
+
+                          // RAMBUT BELAKANG - Posisi & Skala disesuaikan
                           Positioned(
-                            top: -350 * 0.14,
-                            child: _renderPart(widget.hairPath, 350 * 1.14),
+                            top: -avatarSize * 0.15,
+                            left: avatarSize * -0.11,
+                            child: _renderPart(
+                              widget.hairPath,
+                              avatarSize * 1.24,
+                            ),
                           ),
+
+                          // ALIS
                           Positioned(
-                            top: 350 * 0.20,
-                            child: _renderPart(widget.browsPath, 350 * 0.26),
+                            top: avatarSize * 0.25,
+                            child: _renderPart(
+                              widget.browsPath,
+                              avatarSize * 0.31,
+                            ),
                           ),
+
+                          // MATA
                           Positioned(
-                            top: 350 * 0.25,
-                            child: _renderPart(widget.eyePath, 350 * 0.36),
+                            top: avatarSize * 0.29,
+                            child: _renderPart(
+                              widget.eyePath,
+                              avatarSize * 0.39,
+                            ),
                           ),
+
+                          // HIDUNG
                           Positioned(
-                            top: 350 * 0.41,
-                            child: _renderPart(widget.nosePath, 350 * 0.055),
+                            top: avatarSize * 0.45,
+                            child: _renderPart(
+                              widget.nosePath,
+                              avatarSize * 0.055,
+                            ),
                           ),
+
+                          // MULUT
                           Positioned(
-                            top: 350 * 0.50,
-                            child: _renderPart(widget.mouthPath, 350 * 0.13),
+                            top: avatarSize * 0.5,
+                            child: _renderPart(
+                              widget.mouthPath,
+                              avatarSize * 0.13,
+                            ),
                           ),
+
+                          // PONI
                           Positioned(
-                            top: -350 * 0.01,
-                            child: _renderPart(widget.bangsPath, 350 * 0.48),
+                            top: -avatarSize * -0.03,
+                            child: _renderPart(
+                              widget.bangsPath,
+                              avatarSize * 0.53,
+                            ),
                           ),
+
+                          // BAJU
                           Positioned(
                             left: 0,
                             right: 0,
                             child: Center(
                               child: Transform.translate(
-                                offset: const Offset(0, -16),
+                                offset: const Offset(5, -10), // kanan & sedikit turun
                                 child: Transform.scale(
                                   scale: 1.2,
                                   child: _renderPart(
                                     widget.shirtPath,
-                                    350 * 3.30,
+                                    avatarSize * 3.31,
                                   ),
                                 ),
                               ),
@@ -380,7 +418,6 @@ class _HomepageScreenState extends State<HomepageScreen> {
                       .doc(FirebaseAuth.instance.currentUser?.uid)
                       .snapshots(),
                   builder: (context, snapshot) {
-                    // 1. Nilai default jika data belum ditemukan/sedang loading
                     String fullNameFromDb = 'LOADING...'; 
                     String nickNameFromDb = '';
                     Map<String, dynamic>? data;
@@ -388,8 +425,6 @@ class _HomepageScreenState extends State<HomepageScreen> {
                     if (snapshot.hasData && snapshot.data!.exists) {
                       data = snapshot.data!.data() as Map<String, dynamic>?;
                       if (data != null) {
-                        // 2. Ambil data full_name dari Firestore
-                        // Jika full_name kosong di db, dia akan pakai default 'NAMA TIDAK ADA'
                         fullNameFromDb = data['display_name'] ?? 'NAMA TIDAK ADA';
                         nickNameFromDb = data['display_name'] ?? '';
                       }
@@ -398,8 +433,6 @@ class _HomepageScreenState extends State<HomepageScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // DI SINI PERUBAHANNYA: 
-                        // Ganti teks "FULL NAME" manual dengan variabel fullNameFromDb
                         Text(
                           fullNameFromDb.toUpperCase(), 
                           maxLines: 1, 
@@ -410,17 +443,13 @@ class _HomepageScreenState extends State<HomepageScreen> {
                             color: Colors.orange,
                           ),
                         ),
-                        
-                        // Bagian Email dan Nickname (seperti di gambar Anda)
                         Text(
                           "${FirebaseAuth.instance.currentUser?.email ?? ''} | ($nickNameFromDb)", 
                           style: const TextStyle(fontSize: 11, color: Colors.black54), 
                           maxLines: 1, 
                           overflow: TextOverflow.ellipsis,
                         ),
-                        
                         const Divider(height: 15),
-                        
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [

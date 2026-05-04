@@ -105,38 +105,57 @@ class _CharacterCustomizationScreenState
 
                           // RAMBUT BELAKANG
                           Positioned(
-                            top: -avatarSize * 0.14,
-                            child: _renderPart(selectedHairPath, avatarSize * 1.14),
+                            top: -avatarSize * 0.15,
+                            left: avatarSize * -0.11,
+                            child: _renderPart(
+                              selectedHairPath,
+                              avatarSize * 1.24,
+                            ),
                           ),
 
                           // ALIS
                           Positioned(
-                            top: avatarSize * 0.20,
-                            child: _renderPart(selectedBrowsPath, avatarSize * 0.26),
+                            top: avatarSize * 0.25,
+                            child: _renderPart(
+                              selectedBrowsPath,
+                              avatarSize * 0.31,
+                            ),
                           ),
 
                           // MATA
                           Positioned(
-                            top: avatarSize * 0.25,
-                            child: _renderPart(selectedEyePath, avatarSize * 0.36),
+                            top: avatarSize * 0.29,
+                            child: _renderPart(
+                              selectedEyePath,
+                              avatarSize * 0.39,
+                            ),
                           ),
 
                           // HIDUNG
                           Positioned(
-                            top: avatarSize * 0.41,
-                            child: _renderPart(selectedNosePath, avatarSize * 0.055),
+                            top: avatarSize * 0.45,
+                            child: _renderPart(
+                              selectedNosePath,
+                              avatarSize * 0.055,
+                            ),
                           ),
 
                           // MULUT
                           Positioned(
-                            top: avatarSize * 0.50,
-                            child: _renderPart(selectedMouthPath, avatarSize * 0.13),
+                            top: avatarSize * 0.5,
+                            child: _renderPart(
+                              selectedMouthPath,
+                              avatarSize * 0.13,
+                            ),
                           ),
 
                           // PONI
                           Positioned(
-                            top: -avatarSize * 0.01,
-                            child: _renderPart(selectedBangsPath, avatarSize * 0.48),
+                            top: -avatarSize * -0.03,
+                            child: _renderPart(
+                              selectedBangsPath,
+                              avatarSize * 0.53,
+                            ),
                           ),
 
                           // BAJU
@@ -145,10 +164,16 @@ class _CharacterCustomizationScreenState
                             right: 0,
                             child: Center(
                               child: Transform.translate(
-                                offset: const Offset(0, -16),
+                                offset: const Offset(
+                                  5,
+                                  -10,
+                                ), // kanan & sedikit turun
                                 child: Transform.scale(
                                   scale: 1.2,
-                                  child: _renderPart(selectedTopPath, avatarSize * 3.30),
+                                  child: _renderPart(
+                                    selectedTopPath,
+                                    avatarSize * 3.31,
+                                  ),
                                 ),
                               ),
                             ),
@@ -213,26 +238,33 @@ class _CharacterCustomizationScreenState
           ElevatedButton(
             onPressed: () async {
               showDialog(
-                context: context, 
+                context: context,
                 barrierDismissible: false,
-                builder: (context) => const Center(child: CircularProgressIndicator(color: AppColors.orangePrimary))
+                builder: (context) => const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.orangePrimary,
+                  ),
+                ),
               );
 
               // 1. Simpan Pilihan Avatar ke Firestore
               var user = FirebaseAuth.instance.currentUser;
               if (user != null) {
-                await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-                  'avatar_settings': {
-                    'skin': selectedSkinPath,
-                    'eyes': selectedEyePath,
-                    'mouth': selectedMouthPath,
-                    'nose': selectedNosePath,
-                    'brows': selectedBrowsPath,
-                    'hair': selectedHairPath,
-                    'bangs': selectedBangsPath,
-                    'top': selectedTopPath,
-                  }
-                }, SetOptions(merge: true));
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .set({
+                      'avatar_settings': {
+                        'skin': selectedSkinPath,
+                        'eyes': selectedEyePath,
+                        'mouth': selectedMouthPath,
+                        'nose': selectedNosePath,
+                        'brows': selectedBrowsPath,
+                        'hair': selectedHairPath,
+                        'bangs': selectedBangsPath,
+                        'top': selectedTopPath,
+                      },
+                    }, SetOptions(merge: true));
               }
 
               if (!mounted) return;
@@ -263,7 +295,10 @@ class _CharacterCustomizationScreenState
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Text('Save & Done', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Save & Done',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
