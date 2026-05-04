@@ -300,13 +300,19 @@ class _HomepageScreenState extends State<HomepageScreen> {
             color: Colors.white.withOpacity(0.9),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.orange.shade200, width: 2),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+            ],
           ),
           child: Row(
             children: [
               Container(
-                width: 80, height: 100,
-                decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12)),
+                width: 80,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: FittedBox(
@@ -320,20 +326,42 @@ class _HomepageScreenState extends State<HomepageScreen> {
                         clipBehavior: Clip.none,
                         children: [
                           _renderPart(widget.skinPath, 350),
-                          Positioned(top: -350 * 0.14, child: _renderPart(widget.hairPath, 350 * 1.14)),
-                          Positioned(top: 350 * 0.20, child: _renderPart(widget.browsPath, 350 * 0.26)),
-                          Positioned(top: 350 * 0.25, child: _renderPart(widget.eyePath, 350 * 0.36)),
-                          Positioned(top: 350 * 0.41, child: _renderPart(widget.nosePath, 350 * 0.055)),
-                          Positioned(top: 350 * 0.50, child: _renderPart(widget.mouthPath, 350 * 0.13)),
-                          Positioned(top: -350 * 0.01, child: _renderPart(widget.bangsPath, 350 * 0.48)),
                           Positioned(
-                            left: 0, right: 0,
+                            top: -350 * 0.14,
+                            child: _renderPart(widget.hairPath, 350 * 1.14),
+                          ),
+                          Positioned(
+                            top: 350 * 0.20,
+                            child: _renderPart(widget.browsPath, 350 * 0.26),
+                          ),
+                          Positioned(
+                            top: 350 * 0.25,
+                            child: _renderPart(widget.eyePath, 350 * 0.36),
+                          ),
+                          Positioned(
+                            top: 350 * 0.41,
+                            child: _renderPart(widget.nosePath, 350 * 0.055),
+                          ),
+                          Positioned(
+                            top: 350 * 0.50,
+                            child: _renderPart(widget.mouthPath, 350 * 0.13),
+                          ),
+                          Positioned(
+                            top: -350 * 0.01,
+                            child: _renderPart(widget.bangsPath, 350 * 0.48),
+                          ),
+                          Positioned(
+                            left: 0,
+                            right: 0,
                             child: Center(
                               child: Transform.translate(
                                 offset: const Offset(0, -16),
                                 child: Transform.scale(
                                   scale: 1.2,
-                                  child: _renderPart(widget.shirtPath, 350 * 3.30),
+                                  child: _renderPart(
+                                    widget.shirtPath,
+                                    350 * 3.30,
+                                  ),
                                 ),
                               ),
                             ),
@@ -347,22 +375,52 @@ class _HomepageScreenState extends State<HomepageScreen> {
               const SizedBox(width: 15),
               Expanded(
                 child: StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots(),
+                  stream: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(FirebaseAuth.instance.currentUser?.uid)
+                      .snapshots(),
                   builder: (context, snapshot) {
-                    String displayName = 'Full Name';
+                    // 1. Nilai default jika data belum ditemukan/sedang loading
+                    String fullNameFromDb = 'LOADING...'; 
+                    String nickNameFromDb = '';
                     Map<String, dynamic>? data;
+
                     if (snapshot.hasData && snapshot.data!.exists) {
                       data = snapshot.data!.data() as Map<String, dynamic>?;
-                      if (data != null && data['full_name'] != null && data['full_name'] != '') {
-                        displayName = data['full_name'];
+                      if (data != null) {
+                        // 2. Ambil data full_name dari Firestore
+                        // Jika full_name kosong di db, dia akan pakai default 'NAMA TIDAK ADA'
+                        fullNameFromDb = data['display_name'] ?? 'NAMA TIDAK ADA';
+                        nickNameFromDb = data['display_name'] ?? '';
                       }
                     }
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(displayName.toUpperCase(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.orange)),
-                        Text(FirebaseAuth.instance.currentUser?.email ?? '-', style: const TextStyle(fontSize: 11, color: Colors.black54), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        // DI SINI PERUBAHANNYA: 
+                        // Ganti teks "FULL NAME" manual dengan variabel fullNameFromDb
+                        Text(
+                          fullNameFromDb.toUpperCase(), 
+                          maxLines: 1, 
+                          overflow: TextOverflow.ellipsis, 
+                          style: const TextStyle(
+                            fontSize: 22, 
+                            fontWeight: FontWeight.bold, 
+                            color: Colors.orange,
+                          ),
+                        ),
+                        
+                        // Bagian Email dan Nickname (seperti di gambar Anda)
+                        Text(
+                          "${FirebaseAuth.instance.currentUser?.email ?? ''} | ($nickNameFromDb)", 
+                          style: const TextStyle(fontSize: 11, color: Colors.black54), 
+                          maxLines: 1, 
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        
                         const Divider(height: 15),
+                        
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -372,7 +430,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
                         ),
                       ],
                     );
-                  }
+                  },
                 ),
               )
             ],

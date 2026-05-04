@@ -52,11 +52,11 @@ class ScoreScreen extends StatelessWidget {
     return Scaffold(
       body: Container(
         width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 1.0,
-            colors: [Color(0xFFFFFDE7), Color(0xFFFFD54F)],
+          image: DecorationImage(
+            image: AssetImage('assets/images/logo_dan_bg/SU_MAIN_BG02.png'), // Pastikan path benar
+            fit: BoxFit.cover, // Agar gambar menutupi seluruh layar
           ),
         ),
         child: SafeArea(
@@ -149,7 +149,19 @@ class ScoreScreen extends StatelessWidget {
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => GameplayScreen(resep: resep)),
+                        MaterialPageRoute(builder: (context) => GameplayScreen(
+                          resep: resep,
+                          skinPath: skinPath,
+                          eyePath: eyePath,
+                          mouthPath: mouthPath,
+                          nosePath: nosePath,
+                          browsPath: browsPath,
+                          hairPath: hairPath,
+                          bangsPath: bangsPath,
+                          shirtPath: shirtPath,
+                          shirtColor: shirtColor,
+                          hairStyle: hairStyle,
+                        )),
                       );
                     }
                   ),
@@ -199,16 +211,16 @@ class ScoreScreen extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileSettingPage(
-              skinPath: 'assets/images/skin/SU_AVATAR_SKIN01.svg',
-              eyePath: 'assets/images/eye/SU_AVATAR_EYE1.svg',
-              mouthPath: 'assets/images/mouth/SU_AVATAR_MOUTH1.svg',
-              nosePath: 'assets/images/nose/SU_AVATAR_NOSE1.svg',
-              browsPath: 'assets/images/brows/SU_AVATAR_BROWS1.svg',
-              hairPath: 'assets/images/hair/SU_AVATAR_HAIR1.png',
-              bangsPath: 'assets/images/bangs/SU_AVATAR_BANGS1.svg',
-              shirtPath: 'assets/images/top/SU_AVATAR_TOP1.png',
-              shirtColor: Colors.orange,
-              hairStyle: Icons.person,
+              skinPath: skinPath,
+              eyePath: eyePath,
+              mouthPath: mouthPath,
+              nosePath: nosePath,
+              browsPath: browsPath,
+              hairPath: hairPath,
+              bangsPath: bangsPath,
+              shirtPath: shirtPath,
+              shirtColor: shirtColor,
+              hairStyle: hairStyle,
             ))),
             child: const CircleAvatar(
               backgroundColor: Colors.white, 
@@ -242,7 +254,7 @@ class ScoreScreen extends StatelessWidget {
             child: Opacity(
               opacity: index < starCount ? 1.0 : 0.3,
               child: SvgPicture.asset(
-                index < starCount ? 'assets/stars/SU_ICONS_01.SVG' : 'assets/stars/SU_ICONS_02.SVG',
+                index < starCount ? 'assets/stars/SU_ICONS_01.svg' : 'assets/stars/SU_ICONS_02.svg',
                 width: size, height: size, fit: BoxFit.contain,
               ),
             ),

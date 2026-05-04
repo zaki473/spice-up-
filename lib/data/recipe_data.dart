@@ -107,7 +107,7 @@ final List<Recipe> listResep = [
         text: "This ingredient gives a deep umami, slightly funky aroma.",
         options: ["Soy Sauce", "Shrimp Paste", "Fish Sauce", "Cheese"],
         correctAnswerIndex: 1,
-        imagePath: 'assets/quiz/SPC_SHRIMP_PASTE.png', // Gambar Spesifik Soal
+        imagePath: 'assets/quiz/SPC_SHRIMPPASTE.png', // Gambar Spesifik Soal
         hint: " A fermented seafood product widely used in sambal",
       ),
       Question(
@@ -121,14 +121,15 @@ final List<Recipe> listResep = [
         text: "Which ingredient adds sweet balance?",
         options: ["Honey", "Palm Sugar", "Brown Sugar", "Maple Syrup"],
         correctAnswerIndex: 1,
-        imagePath: 'assets/quiz/SPC_PALM_SUGAR.png', // Gambar Spesifik Soal
+        imagePath: 'assets/quiz/SPC_PALMSUGAR.png', // Gambar Spesifik Soal
         hint: "Traditional Indonesian sweetener made from palm sap",
       ),
       Question(
         text: "Which ingredient adds sour freshness to balance the dish?",
         options: ["Shallots", "Cinnamon", "Basil", "Lemongrass"],
         correctAnswerIndex: 0,
-        imagePath: 'assets/quiz/SPC_SHALLOTS.png', // Gambar Spesifik Soal
+        imagePath: 'assets/quiz/SPC_SHALLOT.png',
+         // Gambar Spesifik Soal
         hint: "Often paired with garlic as a basic seasoning duo"
       ),
       Question(
@@ -306,7 +307,7 @@ final List<Recipe> listResep = [
         text: "Which ingredient has a floral, slightly sour aroma?",
         options: ["Basil", "Torch ginger flower", "Mint", "Pandan"],
         correctAnswerIndex: 1,
-        imagePath: 'assets/quiz/SPC_TORCH_GINGER_FLOWER.png',
+        imagePath: 'assets/quiz/SPC_TORCHGINGERFLOWER.png',
         hint: "Bright pink and often used in Indonesian salads",
       ),
       Question(
@@ -354,7 +355,7 @@ final List<Recipe> listResep = [
         text: "Which spice has a warm, slightly spicy and fresh taste?",
         options: ["Ginger", "Cinnamon", "Clove", "Nutmeg"],
         correctAnswerIndex: 0,
-        imagePath: 'assets/quiz/SPC_TORCH_GINGER_FLOWER.png',
+        imagePath: 'assets/quiz/SPC_TORCHGINGERFLOWER.png',
         hint: "Bright pink and often used in Indonesian salads",
       ),
       Question(

@@ -81,6 +81,7 @@ flutter:
   # Daftar semua aset yang digunakan dalam aplikasi
     # bagian logo dan kulit
     - assets/images/logo.png
+    - assets/images/logo_dan_bg/SU_MAIN_BG02.png
     - assets/images/logo_dan_bg/SU_MAIN_BG01.svg
     - assets/images/logo_dan_bg/SU_TYPEFACE.svg
     - assets/images/skin/SU_AVATAR_SKIN01.svg

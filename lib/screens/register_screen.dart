@@ -49,7 +49,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // 3. Simpan data user ke Cloud Firestore (Tabel Users)
         await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
           'uid': userCredential.user!.uid,
-          'display_name': _nameController.text.trim(),
+          'display_name': _nameController.text.trim(), 
+          'full_name': _nameController.text.trim(),  
           'email': _emailController.text.trim(),
           'total_score': 0,
           'badges': [],
