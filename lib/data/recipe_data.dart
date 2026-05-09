@@ -6,7 +6,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "MI GOMAK",
     subtitle: "Batak Spicy Noodles",
-    imagePath: 'assets/food/SU_FOOD_01_MI_GOMAK.png',
+    imagePath: 'assets/food1/SU_FOOD_01_MI_GOMAK.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.spice,
@@ -54,7 +54,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "IKAN KUAH KUNING",
     subtitle: "Yellow Turmeric Fish Soup",
-    imagePath: 'assets/food/SU_FOOD_01_IKAN_KUAH_KUNING.png',
+    imagePath: 'assets/food1/SU_FOOD_01_IKAN_KUAH_KUNING.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.spice,
@@ -88,7 +88,7 @@ final List<Recipe> listResep = [
         text: "Which spice builds the savory base flavor?",
         options: ["Garlic", "Cinnamon", "Nutmeg", "Star Anise"],
         correctAnswerIndex: 0,
-        imagePath: 'assets/quiz/SPC_TURMERIC.png', // Gambar Spesifik Soal
+        imagePath: 'assets/quiz/SPC_GARLIC.png', // Gambar Spesifik Soal
       ),
     ],
   ),
@@ -96,8 +96,8 @@ final List<Recipe> listResep = [
   // no 3
   Recipe(
     title: "Ayam Taliwang",
-    subtitle: " Lombok Spicy Grilled Chicken ",
-    imagePath: 'assets/food/SU_FOOD_02_AYAM_TALIWANG.png',
+    subtitle: "Lombok Spicy Grilled Chicken ",
+    imagePath: 'assets/food1/SU_FOOD_02_AYAM_TALIWANG.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.bumbu,
@@ -145,8 +145,8 @@ final List<Recipe> listResep = [
   // no 4
   Recipe(
     title: "Tinutuan",
-    subtitle: " Manado Vegetable Porridge",
-    imagePath: 'assets/food/SU_FOOD_02_TINUTUAN.png',
+    subtitle: "Manado Vegetable Porridge",
+    imagePath: 'assets/food1/SU_FOOD_02_TINUTUAN.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.bumbu,
@@ -194,7 +194,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "Papeda",
     subtitle: "Sago Porridge",
-    imagePath: 'assets/food/SU_FOOD_02_PAPEDA.png',
+    imagePath: 'assets/food1/SU_FOOD_02_PAPEDA.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.bumbu,
@@ -242,7 +242,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "Coto Makassar",
     subtitle: "Makassar Beef Soup",
-    imagePath: 'assets/food/SU_FOOD_03_COTOMAKASSAR.png',
+    imagePath: 'assets/food1/SU_FOOD_03_COTOMAKASSAR.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.litle,
@@ -280,7 +280,7 @@ final List<Recipe> listResep = [
         text: "Which is a fragrant leaf used in soups?",
         options: ["Lettuce", "Bay leaves", "Spinach", "Kale"],
         correctAnswerIndex: 1,
-        imagePath: 'assets/quiz/SPC_BAY_LEAVES.png', // Gambar Spesifik Soal
+        imagePath: 'assets/quiz/SPC_BAYLEAVES.png', // Gambar Spesifik Soal
         hint: "Added whole and removed before serving",
       ),
     ],
@@ -290,7 +290,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "Arsik",
     subtitle: "Batak Spiced Fish",
-    imagePath: 'assets/food/SU_FOOD_03_ARSIK.png',
+    imagePath: 'assets/food1/SU_FOOD_03_ARSIK.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.litle,
@@ -338,7 +338,7 @@ final List<Recipe> listResep = [
   Recipe(
     title: "Ayam Betutu",
     subtitle: "Balinese Spiced Chicken",
-    imagePath: 'assets/food/SU_FOOD_03_AYAMBETUTU.png',
+    imagePath: 'assets/food1/SU_FOOD_03_AYAMBETUTU.png',
     stars: 0,
     isLocked: false,
     difficulty: Difficulty.litle,
@@ -348,21 +348,21 @@ final List<Recipe> listResep = [
         text: "Which spice gives yellow color?",
         options: ["Turmeric", "Ginger", "Pepper", "Basil"],
         correctAnswerIndex: 0,
-        imagePath: 'assets/quiz/SPC_ANDALIMAN.png', // Gambar Spesifik Soal
+        imagePath: 'assets/quiz/SPC_TURMERIC.png', // Gambar Spesifik Soal
         hint: "Widely used in Indonesian spice blends",
       ),
       Question(
         text: "Which spice has a warm, slightly spicy and fresh taste?",
         options: ["Ginger", "Cinnamon", "Clove", "Nutmeg"],
         correctAnswerIndex: 0,
-        imagePath: 'assets/quiz/SPC_TORCHGINGERFLOWER.png',
+        imagePath: 'assets/quiz/SPC_GINGER.png',
         hint: "Bright pink and often used in Indonesian salads",
       ),
       Question(
         text: "Which spice is similar to ginger but stronger?",
         options: ["Galangal", "Turmeric", "Pepper", "Coriander"],
         correctAnswerIndex: 0,
-        imagePath: 'assets/quiz/SPC_GARLIC.png', // Gambar Spesifik Soal
+        imagePath: 'assets/quiz/SPC_GALANGAL.png', // Gambar Spesifik Soal
         hint: "Harder texture and sharper aroma",
       ),
       Question(

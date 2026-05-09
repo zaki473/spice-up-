@@ -7,10 +7,33 @@ import 'firebase_options.dart';
 import 'constants/app_colors.dart';
 import 'screens/login_screen.dart';
 import 'utils/size_config.dart';
+import 'utils/security_helper.dart';
+import 'package:safe_device/safe_device.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+  
+  // 1. Security Check: Deteksi Root/Jailbreak/Emulator
+  if (!kIsWeb) {
+    bool isJailBroken = await SafeDevice.isJailBroken;
+    bool isRealDevice = await SafeDevice.isRealDevice;
+    
+    if (isJailBroken || (!isRealDevice && kReleaseMode)) {
+      SecurityHelper.log("Security Threat Detected. isJailBroken: $isJailBroken, isRealDevice: $isRealDevice");
+      // return; // Hentikan app jika berbahaya
+    }
+  }
+
+  SecurityHelper.log("App Starting in ${kReleaseMode ? 'Release' : 'Debug'} Mode");
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -18,12 +41,79 @@ void main() async {
   runApp(const SpiceUpApp());
 }
 
-class SpiceUpApp extends StatelessWidget {
+class SpiceUpApp extends StatefulWidget {
   const SpiceUpApp({super.key});
+
+  @override
+  State<SpiceUpApp> createState() => _SpiceUpAppState();
+}
+
+class _SpiceUpAppState extends State<SpiceUpApp> {
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
+  bool _isDisconnectedDialogShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(_updateConnectionStatus);
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
+  }
+
+  void _updateConnectionStatus(List<ConnectivityResult> result) {
+    bool isOffline = result.contains(ConnectivityResult.none);
+
+    if (isOffline) {
+      if (!_isDisconnectedDialogShowing && navigatorKey.currentContext != null) {
+        _isDisconnectedDialogShowing = true;
+        showDialog(
+          context: navigatorKey.currentContext!,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: const [
+                Icon(Icons.wifi_off, color: Colors.red),
+                SizedBox(width: 10),
+                Text("Koneksi Terputus", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 18)),
+              ],
+            ),
+            content: const Text("Sepertinya Anda kehilangan koneksi internet. Pastikan jaringan aktif untuk menyimpan progress game."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _isDisconnectedDialogShowing = false;
+                },
+                child: const Text("Tutup", style: TextStyle(color: Colors.orange)),
+              ),
+            ],
+          ),
+        );
+      }
+    } else {
+      if (_isDisconnectedDialogShowing && navigatorKey.currentContext != null) {
+        Navigator.pop(navigatorKey.currentContext!);
+        _isDisconnectedDialogShowing = false;
+        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+          const SnackBar(
+            content: Text("Koneksi internet kembali stabil!"),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Spice Up',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

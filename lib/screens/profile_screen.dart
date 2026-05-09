@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
 import 'forgot_password_screen.dart';
 import 'customization_screen.dart';
+import '../utils/app_dialogs.dart';
 
 class ProfileSettingPage extends StatelessWidget {
   final String skinPath;
@@ -81,15 +82,33 @@ class ProfileSettingPage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(FirebaseAuth.instance.currentUser!.uid)
-                  .set({
-                    'full_name': fullNameCtrl.text.trim(),
-                    'school': schoolCtrl.text.trim(),
-                    'birthday': birthdayCtrl.text.trim(),
-                  }, SetOptions(merge: true));
-              if (context.mounted) Navigator.pop(context);
+              try {
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .set({
+                  'full_name': fullNameCtrl.text.trim(),
+                  'school': schoolCtrl.text.trim(),
+                  'birthday': birthdayCtrl.text.trim(),
+                }, SetOptions(merge: true));
+
+                if (context.mounted) {
+                  Navigator.pop(context); // Tutup dialog edit
+                  AppDialogs.showSuccessDialog(
+                    context, 
+                    'Berhasil', 
+                    'Profil Anda telah diperbarui!'
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  AppDialogs.showErrorDialog(
+                    context, 
+                    'Error', 
+                    'Gagal memperbarui profil.'
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
             child: const Text("Save"),
@@ -445,14 +464,14 @@ class ProfileSettingPage extends StatelessWidget {
                                               child: Center(
                                                 child: Transform.translate(
                                                   offset: const Offset(
-                                                    5,
+                                                    4,
                                                     -10,
                                                   ), // kanan & sedikit turun
                                                   child: Transform.scale(
                                                     scale: 1.2,
                                                     child: _renderPart(
                                                       shirtPath,
-                                                      350 * 3.31,
+                                                      350 * 3.33,
                                                     ),
                                                   ),
                                                 ),
@@ -672,13 +691,22 @@ class ProfileSettingPage extends StatelessWidget {
                   () => _showTerms(context),
                 ),
                 _buildMenuItem(Icons.exit_to_app, "Log out", () {
-                  // Logout dan pindah ke halaman Login
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
-                    ),
-                    (route) => false,
+                  AppDialogs.showConfirmDialog(
+                    context, 
+                    'Konfirmasi Logout', 
+                    'Apakah Anda yakin ingin keluar dari akun ini?',
+                    onConfirm: () async {
+                      await FirebaseAuth.instance.signOut();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      }
+                    },
                   );
                 }),
 

@@ -7,6 +7,7 @@ import 'customization_screen.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 import 'homepage_screen.dart';
+import '../utils/app_dialogs.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,40 +50,58 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pop(context); // Tutup loading
 
         Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
-        if (data != null && data.containsKey('avatar_settings')) {
-          var avatar = data['avatar_settings'];
-          // Langsung ke Homepage karena sudah pernah Customization
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HomepageScreen(
-                skinPath: avatar['skin'] ?? 'assets/images/skin/SU_AVATAR_SKIN01.svg',
-                eyePath: avatar['eyes'] ?? 'assets/images/eye/SU_AVATAR_EYE1.svg',
-                mouthPath: avatar['mouth'] ?? 'assets/images/mouth/SU_AVATAR_MOUTH1.svg',
-                nosePath: avatar['nose'] ?? 'assets/images/nose/SU_AVATAR_NOSE1.svg',
-                browsPath: avatar['brows'] ?? 'assets/images/brows/SU_AVATAR_BROWS1.svg',
-                hairPath: avatar['hair'] ?? 'assets/images/hair/SU_AVATAR_HAIR1.png',
-                bangsPath: avatar['bangs'] ?? 'assets/images/bangs/SU_AVATAR_BANGS1.svg',
-                shirtPath: avatar['top'] ?? 'assets/images/top/SU_AVATAR_TOP1.png',
-                shirtColor: Colors.white,
-                hairStyle: Icons.face,
-              ),
-            ),
-          );
-        } else {
-          // Belum punya avatar, paksa Customization dulu
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CharacterCustomizationScreen(),
-            ),
-          );
-        }
+        
+        AppDialogs.showSuccessDialog(
+          context, 
+          'Login Berhasil', 
+          'Selamat datang kembali di Spice Up!',
+          onConfirm: () {
+            if (data != null && data.containsKey('avatar_settings')) {
+              var avatar = data['avatar_settings'];
+              // Langsung ke Homepage karena sudah pernah Customization
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HomepageScreen(
+                    skinPath: avatar['skin'] ?? 'assets/images/skin/SU_AVATAR_SKIN01.svg',
+                    eyePath: avatar['eyes'] ?? 'assets/images/eye/SU_AVATAR_EYE1.svg',
+                    mouthPath: avatar['mouth'] ?? 'assets/images/mouth/SU_AVATAR_MOUTH1.svg',
+                    nosePath: avatar['nose'] ?? 'assets/images/nose/SU_AVATAR_NOSE1.svg',
+                    browsPath: avatar['brows'] ?? 'assets/images/brows/SU_AVATAR_BROWS1.svg',
+                    hairPath: avatar['hair'] ?? 'assets/images/hair/SU_AVATAR_HAIR1.png',
+                    bangsPath: avatar['bangs'] ?? 'assets/images/bangs/SU_AVATAR_BANGS1.svg',
+                    shirtPath: avatar['top'] ?? 'assets/images/top/SU_AVATAR_TOP1.png',
+                    shirtColor: Colors.white,
+                    hairStyle: Icons.face,
+                  ),
+                ),
+              );
+            } else {
+              // Belum punya avatar, paksa Customization dulu
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CharacterCustomizationScreen(),
+                ),
+              );
+            }
+          },
+        );
       } on FirebaseAuthException catch (e) {
         if (!mounted) return;
         Navigator.pop(context); // Tutup loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Login failed'), backgroundColor: Colors.red),
+        AppDialogs.showErrorDialog(
+          context, 
+          'Login Gagal', 
+          e.message ?? 'Terjadi kesalahan saat login.'
+        );
+      } catch (e) {
+        if (!mounted) return;
+        Navigator.pop(context);
+        AppDialogs.showErrorDialog(
+          context, 
+          'Error', 
+          'Terjadi kesalahan sistem.'
         );
       }
     }

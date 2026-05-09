@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import 'dart:async';
 
@@ -11,6 +12,7 @@ import 'gameplay_screen.dart';
 import '../data/recipe_data.dart';
 import '../models/recipe_model.dart';
 import '../utils/size_config.dart';
+import '../utils/app_dialogs.dart';
 
 class MultiplayerLobbyScreen extends StatefulWidget {
   final String skinPath;
@@ -24,8 +26,17 @@ class MultiplayerLobbyScreen extends StatefulWidget {
   final Color shirtColor;
   final IconData hairStyle;
 
+  final String? initialRoomCode;
+  final String? initialPlayerId;
+  final bool initialIsHost;
+  final bool fromScoreScreen;
+
   const MultiplayerLobbyScreen({
     super.key,
+    this.initialRoomCode,
+    this.initialPlayerId,
+    this.initialIsHost = false,
+    this.fromScoreScreen = false,
     this.skinPath = 'assets/images/avatar/skin/SKIN_01.svg',
     this.eyePath = 'assets/images/avatar/eyes/EYE_01.svg',
     this.mouthPath = 'assets/images/avatar/mouth/MOUTH_01.svg',
@@ -44,16 +55,14 @@ class MultiplayerLobbyScreen extends StatefulWidget {
 
 class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
     with SingleTickerProviderStateMixin {
-  // States: 0 = Selection, 1 = Join Input, 2 = Inside Lobby
   int _viewState = 0;
   String _roomCode = "";
   String _playerId = "";
   final TextEditingController _codeController = TextEditingController();
 
-  // Data simulasi pemain di room
-  List<Map<String, dynamic>> _players = [];
   bool _isHost = false;
   bool _isGachaShowing = false;
+  bool _waitingForReset = false;
   StreamSubscription<DocumentSnapshot>? _roomSubscription;
 
   late AnimationController _pulseController;
@@ -70,6 +79,26 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    if (widget.initialRoomCode != null && widget.initialPlayerId != null) {
+      _roomCode = widget.initialRoomCode!;
+      _playerId = widget.initialPlayerId!;
+      _isHost = widget.initialIsHost;
+      _viewState = 2;
+      
+      if (widget.fromScoreScreen) {
+        _waitingForReset = true;
+      }
+
+      if (_isHost) {
+        FirebaseFirestore.instance
+            .collection('rooms')
+            .doc(_roomCode)
+            .update({'status': 'waiting'}).catchError((_) {});
+      }
+      
+      _listenToRoomStatus();
+    }
   }
 
   @override
@@ -87,11 +116,30 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
         .doc(_roomCode)
         .snapshots()
         .listen((snapshot) {
-          if (snapshot.exists) {
-            var data = snapshot.data() as Map<String, dynamic>;
-            if (data['status'] == 'playing') {
-              int levelIndex = data['selectedLevelIndex'] ?? 0;
-              _showGachaAnimation(listResep[levelIndex]);
+          if (!snapshot.exists) {
+            if (!_isHost && mounted && _viewState == 2) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Room telah ditutup oleh Host.")),
+              );
+              setState(() { _viewState = 0; });
+            }
+            return;
+          }
+          var data = snapshot.data() as Map<String, dynamic>;
+          
+          if (_waitingForReset && data['status'] == 'waiting') {
+            _waitingForReset = false;
+          }
+
+          if (!_waitingForReset && data['status'] == 'playing') {
+            int levelIndex = data['selectedLevelIndex'] ?? 0;
+            _showGachaAnimation(listResep[levelIndex]);
+          } else if (data['status'] == 'closed') {
+            if (!_isHost && mounted && _viewState == 2) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Room telah ditutup oleh Host.")),
+              );
+              setState(() { _viewState = 0; });
             }
           }
         });
@@ -104,15 +152,13 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return const GachaAnimationDialog();
-      },
+      builder: (context) => const GachaAnimationDialog(),
     );
 
     await Future.delayed(const Duration(seconds: 3));
 
     if (mounted) {
-      Navigator.pop(context); // close dialog
+      Navigator.pop(context);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -140,39 +186,31 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
   String _generateRoomCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     Random rnd = Random();
-    return String.fromCharCodes(
-      Iterable.generate(5, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))),
-    );
+    return String.fromCharCodes(Iterable.generate(5, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))));
   }
 
   void _createRoom() async {
     String generatedCode = _generateRoomCode();
-
     setState(() {
       _isHost = true;
       _roomCode = generatedCode;
       _playerId = 'host_id_1';
-      _viewState = 2; // Pindah layar dengan cepat menghindari kesan hang
+      _viewState = 2;
     });
     _listenToRoomStatus();
 
     try {
       final firestore = FirebaseFirestore.instance;
-      // 1. Induk Room
       await firestore.collection('rooms').doc(generatedCode).set({
         'hostName': 'Tuan Rumah',
         'status': 'waiting',
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // 2. Buat profil player buat Diri Sendiri (Host) lengkap dengan Wajah
-      await firestore
-          .collection('rooms')
-          .doc(generatedCode)
-          .collection('players')
-          .doc('host_id_1')
-          .set({
-            'name': 'Kamu (Host)',
+      String myName = FirebaseAuth.instance.currentUser?.displayName ?? 'Kamu (Host)';
+
+      await firestore.collection('rooms').doc(generatedCode).collection('players').doc('host_id_1').set({
+            'name': myName,
             'isHost': true,
             'score': 0,
             'avatar': {
@@ -188,10 +226,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
             },
           });
     } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -202,17 +237,14 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
 
     try {
       final firestore = FirebaseFirestore.instance;
-      // Cek Validasi Kode
       var roomSnap = await firestore.collection('rooms').doc(enteredCode).get();
-      if (roomSnap.data()?['status'] == 'playing') {
-        if (mounted)
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Room Code tidak ditemukan!")),
-          );
+      if (!roomSnap.exists || roomSnap.data()?['status'] == 'playing') {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Room tidak tersedia!")));
         return;
       }
 
-      String myGuestID = "guest_${DateTime.now().millisecondsSinceEpoch}";
+      String myGuestID = FirebaseAuth.instance.currentUser?.uid ?? "guest_${DateTime.now().millisecondsSinceEpoch}";
+      String myName = FirebaseAuth.instance.currentUser?.displayName ?? 'Teman Baru';
 
       setState(() {
         _isHost = false;
@@ -222,14 +254,8 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
       });
       _listenToRoomStatus();
 
-      // Join sebagai Guest lengkap dengan Wajah
-      await firestore
-          .collection('rooms')
-          .doc(enteredCode)
-          .collection('players')
-          .doc(myGuestID)
-          .set({
-            'name': 'Teman Baru',
+      await firestore.collection('rooms').doc(enteredCode).collection('players').doc(myGuestID).set({
+            'name': myName,
             'isHost': false,
             'score': 0,
             'avatar': {
@@ -245,26 +271,18 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
             },
           });
     } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Gagal joint: $e")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal join: $e")));
     }
   }
 
   Widget _renderAvatarPart(String path, double width) {
-    if (path.endsWith('.svg')) {
-      return SvgPicture.asset(path, width: width, fit: BoxFit.contain);
-    }
+    if (path.endsWith('.svg')) return SvgPicture.asset(path, width: width, fit: BoxFit.contain);
     return Image.asset(path, width: width, fit: BoxFit.contain);
   }
 
   Widget _buildPlayerAvatar(Map<String, dynamic>? avatarData) {
-    if (avatarData == null) return _buildDummyAvatar(Colors.teal, Icons.person);
-
-    // Gunakan ukuran dasar 350 agar perhitungan multiplier (0.15, 0.31, dll) akurat
+    if (avatarData == null) return Container(color: Colors.grey.shade200, child: const Icon(Icons.person));
     double baseSize = 350;
-
     return FittedBox(
       fit: BoxFit.cover,
       alignment: Alignment.topCenter,
@@ -275,81 +293,19 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
           alignment: Alignment.center,
           clipBehavior: Clip.none,
           children: [
-            // BASE
-            _renderAvatarPart(
-              avatarData['skinPath'] ?? widget.skinPath,
-              baseSize,
-            ),
-
-            // RAMBUT BELAKANG
+            _renderAvatarPart(avatarData['skinPath'] ?? widget.skinPath, baseSize),
+            Positioned(top: -baseSize * 0.15, left: baseSize * -0.11, child: _renderAvatarPart(avatarData['hairPath'] ?? widget.hairPath, baseSize * 1.24)),
+            Positioned(top: baseSize * 0.25, child: _renderAvatarPart(avatarData['browsPath'] ?? widget.browsPath, baseSize * 0.31)),
+            Positioned(top: baseSize * 0.29, child: _renderAvatarPart(avatarData['eyePath'] ?? widget.eyePath, baseSize * 0.39)),
+            Positioned(top: baseSize * 0.45, child: _renderAvatarPart(avatarData['nosePath'] ?? widget.nosePath, baseSize * 0.055)),
+            Positioned(top: baseSize * 0.5, child: _renderAvatarPart(avatarData['mouthPath'] ?? widget.mouthPath, baseSize * 0.13)),
+            Positioned(top: -baseSize * -0.03, child: _renderAvatarPart(avatarData['bangsPath'] ?? widget.bangsPath, baseSize * 0.53)),
             Positioned(
-              top: -baseSize * 0.15,
-              left: baseSize * -0.11,
-              child: _renderAvatarPart(
-                avatarData['hairPath'] ?? widget.hairPath,
-                baseSize * 1.24,
-              ),
-            ),
-
-            // ALIS
-            Positioned(
-              top: baseSize * 0.25,
-              child: _renderAvatarPart(
-                avatarData['browsPath'] ?? widget.browsPath,
-                baseSize * 0.31,
-              ),
-            ),
-
-            // MATA
-            Positioned(
-              top: baseSize * 0.29,
-              child: _renderAvatarPart(
-                avatarData['eyePath'] ?? widget.eyePath,
-                baseSize * 0.39,
-              ),
-            ),
-
-            // HIDUNG
-            Positioned(
-              top: baseSize * 0.45,
-              child: _renderAvatarPart(
-                avatarData['nosePath'] ?? widget.nosePath,
-                baseSize * 0.055,
-              ),
-            ),
-
-            // MULUT
-            Positioned(
-              top: baseSize * 0.5,
-              child: _renderAvatarPart(
-                avatarData['mouthPath'] ?? widget.mouthPath,
-                baseSize * 0.13,
-              ),
-            ),
-
-            // PONI
-            Positioned(
-              top: -baseSize * -0.03,
-              child: _renderAvatarPart(
-                avatarData['bangsPath'] ?? widget.bangsPath,
-                baseSize * 0.53,
-              ),
-            ),
-
-            // BAJU
-            Positioned(
-              left: 0,
-              right: 0,
+              left: 0, right: 0,
               child: Center(
                 child: Transform.translate(
-                  offset: const Offset(5, -10), // kanan & sedikit turun
-                  child: Transform.scale(
-                    scale: 1.2,
-                    child: _renderAvatarPart(
-                      avatarData['shirtPath'] ?? widget.shirtPath,
-                      baseSize * 3.31,
-                    ),
-                  ),
+                  offset: const Offset(4, -10),
+                  child: Transform.scale(scale: 1.2, child: _renderAvatarPart(avatarData['shirtPath'] ?? widget.shirtPath, baseSize * 3.33)),
                 ),
               ),
             ),
@@ -359,499 +315,152 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
     );
   }
 
-  Widget _buildDummyAvatar(Color bgColor, IconData icon) {
-    return Container(
-      decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-      child: Center(
-        child: Icon(icon, color: Colors.white, size: 40.sp),
-      ),
-    );
+  Future<bool> _onWillPop() async {
+    if (_viewState == 2) {
+      bool? confirm = await AppDialogs.showConfirmDialog(
+        context,
+        "Keluar Room?",
+        "Apakah kamu yakin ingin keluar dari room ini?",
+        confirmText: "Keluar",
+        cancelText: "Batal",
+      );
+      if (confirm == true) {
+        if (_isHost) {
+          FirebaseFirestore.instance.collection('rooms').doc(_roomCode).update({'status': 'closed'});
+        } else {
+          FirebaseFirestore.instance.collection('rooms').doc(_roomCode).collection('players').doc(_playerId).delete();
+        }
+        setState(() => _viewState = 0);
+      }
+      return false;
+    } else if (_viewState == 1) {
+      setState(() => _viewState = 0);
+      return false;
+    }
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: _viewState > 0
-          ? AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  setState(
-                    () => _viewState = _viewState == 2 && _isHost ? 0 : 0,
-                  );
-                },
-              ),
-            )
-          : null,
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFF9800),
-              Color(0xFFFFCC80),
-            ], // Gradasi Oranye Semangat
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  transitionBuilder:
-                      (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0.0, 0.1),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
-                  child: _buildCurrentView(),
-                ),
-              ),
-              if (_viewState == 0) _buildBottomNav(context),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth > 600;
 
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
-      height: 70.h,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(35.w),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 15)],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          IconButton(
-            icon: Icon(Icons.home_outlined, color: Colors.grey, size: 30.w),
-            onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => HomepageScreen(
-                  skinPath: widget.skinPath,
-                  eyePath: widget.eyePath,
-                  mouthPath: widget.mouthPath,
-                  nosePath: widget.nosePath,
-                  browsPath: widget.browsPath,
-                  hairPath: widget.hairPath,
-                  bangsPath: widget.bangsPath,
-                  shirtPath: widget.shirtPath,
-                  shirtColor: widget.shirtColor,
-                  hairStyle: widget.hairStyle,
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: _viewState > 0
+            ? AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                  onPressed: () async { if (await _onWillPop()) Navigator.of(context).pop(); },
                 ),
-              ),
+              )
+            : null,
+        body: Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFFF9800), Color(0xFFFFCC80)],
             ),
           ),
-          IconButton(
-            icon: Icon(
-              Icons.play_circle_outline,
-              color: Colors.grey,
-              size: 30.w,
-            ),
-            onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LevelsScreen(
-                  skinPath: widget.skinPath,
-                  eyePath: widget.eyePath,
-                  mouthPath: widget.mouthPath,
-                  nosePath: widget.nosePath,
-                  browsPath: widget.browsPath,
-                  hairPath: widget.hairPath,
-                  bangsPath: widget.bangsPath,
-                  shirtPath: widget.shirtPath,
-                  shirtColor: widget.shirtColor,
-                  hairStyle: widget.hairStyle,
-                ),
-              ),
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.menu_book_outlined,
-              color: Colors.grey,
-              size: 30.w,
-            ),
-            onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SpiceJournalScreen(
-                  skinPath: widget.skinPath,
-                  eyePath: widget.eyePath,
-                  mouthPath: widget.mouthPath,
-                  nosePath: widget.nosePath,
-                  browsPath: widget.browsPath,
-                  hairPath: widget.hairPath,
-                  bangsPath: widget.bangsPath,
-                  shirtPath: widget.shirtPath,
-                  shirtColor: widget.shirtColor,
-                  hairStyle: widget.hairStyle,
-                ),
-              ),
-            ),
-          ),
-          Icon(Icons.person, color: Colors.orange, size: 32.w),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCurrentView() {
-    if (_viewState == 0) return _buildSelectionView();
-    if (_viewState == 1) return _buildJoinInputView();
-    return _buildInsideLobbyView();
-  }
-
-  // ================= VIEW 1 =================
-  Widget _buildSelectionView() {
-    return KeyedSubtree(
-      key: const ValueKey(0),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 30.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.sports_esports_rounded,
-              size: 100.w,
-              color: Colors.white,
-            ),
-            SizedBox(height: 20.h),
-            Text(
-              "SPICE DUEL",
-              style: TextStyle(
-                fontSize: 36.sp,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: 2.w,
-              ),
-            ),
-            Text(
-              "Tantang temanmu melihat siapa koki tercepat!",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16.sp, color: Colors.white70),
-            ),
-            SizedBox(height: 60.h),
-            _buildBigButton(
-              title: "CREATE ROOM",
-              subtitle: "Bikin ruang baru dan jadi Host",
-              icon: Icons.add_home_rounded,
-              color: Colors.white,
-              textColor: Colors.orange.shade800,
-              onTap: _createRoom,
-            ),
-            const SizedBox(height: 20),
-            _buildBigButton(
-              title: "JOIN ROOM",
-              subtitle: "Masuk ke ruangan teman dengan kode",
-              icon: Icons.login_rounded,
-              color: Colors.orange.shade800,
-              textColor: Colors.white,
-              onTap: () => setState(() => _viewState = 1),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ================= VIEW 2 =================
-  Widget _buildJoinInputView() {
-    return KeyedSubtree(
-      key: const ValueKey(1),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 30.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "JOIN ROOM",
-              style: TextStyle(
-                fontSize: 28.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(height: 10.h),
-            Text(
-              "Masukkan 5 digit kode ruangan temanmu:",
-              style: TextStyle(color: Colors.white70, fontSize: 14.sp),
-            ),
-            SizedBox(height: 30.h),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 5.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15.w),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 10),
-                ],
-              ),
-              child: TextField(
-                controller: _codeController,
-                textAlign: TextAlign.center,
-                maxLength: 5,
-                textCapitalization: TextCapitalization.characters,
-                style: TextStyle(
-                  fontSize: 32.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange.shade900,
-                  letterSpacing: 10.w,
-                ),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  counterText: "",
-                  hintText: "KODE",
-                  hintStyle: TextStyle(color: Colors.black26),
-                ),
-              ),
-            ),
-            SizedBox(height: 40.h),
-            SizedBox(
-              width: double.infinity,
-              height: 60.h,
-              child: ElevatedButton(
-                onPressed: _joinRoom,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange.shade900,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.w),
-                  ),
-                  elevation: 5,
-                ),
-                child: Text(
-                  "MASUK SEKARANG",
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+          child: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    child: _buildCurrentView(isTablet),
                   ),
                 ),
-              ),
+                if (_viewState == 0) _buildBottomNav(context, screenWidth),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  // ================= VIEW 3 =================
-  Widget _buildInsideLobbyView() {
-    return KeyedSubtree(
-      key: const ValueKey(2),
+  Widget _buildCurrentView(bool isTablet) {
+    switch (_viewState) {
+      case 0: return _buildSelectionView(isTablet);
+      case 1: return _buildJoinInputView();
+      case 2: return _buildInsideLobbyView(isTablet);
+      default: return const SizedBox();
+    }
+  }
+
+  Widget _buildSelectionView(bool isTablet) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 30.w),
       child: Column(
         children: [
+          SizedBox(height: 50.h),
+          Icon(Icons.sports_esports_rounded, size: isTablet ? 120.w : 100.w, color: Colors.white),
           SizedBox(height: 20.h),
           Text(
-            "ROOM CODE",
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 2.w,
-            ),
+            "SPICE DUEL",
+            style: TextStyle(fontSize: 36.sp, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2),
           ),
-          ScaleTransition(
-            scale: _pulseAnimation,
-            child: Container(
-              margin: EdgeInsets.symmetric(vertical: 10.h),
-              padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 15.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20.w),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 15,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Text(
-                _roomCode,
-                style: TextStyle(
-                  fontSize: 48.sp,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.orange.shade900,
-                  letterSpacing: 8.w,
-                ),
-              ),
-            ),
+          Text("Tantang temanmu melihat siapa koki tercepat!", textAlign: TextAlign.center, style: TextStyle(fontSize: 16.sp, color: Colors.white70)),
+          SizedBox(height: 50.h),
+          _buildBigButton(
+            title: "CREATE ROOM",
+            subtitle: "Bikin ruang baru dan jadi Host",
+            icon: Icons.add_home_rounded,
+            color: Colors.white,
+            textColor: Colors.orange.shade800,
+            onTap: _createRoom,
           ),
+          SizedBox(height: 20.h),
+          _buildBigButton(
+            title: "JOIN ROOM",
+            subtitle: "Masuk ke ruangan teman dengan kode",
+            icon: Icons.login_rounded,
+            color: Colors.orange.shade800,
+            textColor: Colors.white,
+            onTap: () => setState(() => _viewState = 1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJoinInputView() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 30.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text("JOIN ROOM", style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.bold, color: Colors.white)),
           SizedBox(height: 10.h),
-          Text(
-            "Menunggu pemain lain...",
-            style: TextStyle(
-              color: Colors.white,
-              fontStyle: FontStyle.italic,
-              fontSize: 14.sp,
+          const Text("Masukkan 5 digit kode ruangan:", style: TextStyle(color: Colors.white70)),
+          SizedBox(height: 30.h),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+            child: TextField(
+              controller: _codeController,
+              textAlign: TextAlign.center,
+              maxLength: 5,
+              textCapitalization: TextCapitalization.characters,
+              style: TextStyle(fontSize: 32.sp, fontWeight: FontWeight.bold, color: Colors.orange.shade900, letterSpacing: 10),
+              decoration: const InputDecoration(border: InputBorder.none, counterText: "", hintText: "KODE"),
             ),
           ),
-
           SizedBox(height: 40.h),
-
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(40.w)),
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(25.w),
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: _roomCode.isNotEmpty
-                      ? FirebaseFirestore.instance
-                            .collection('rooms')
-                            .doc(_roomCode)
-                            .collection('players')
-                            .snapshots()
-                      : const Stream.empty(),
-                  builder: (context, snapshot) {
-                    int playerCount = snapshot.hasData
-                        ? snapshot.data!.docs.length
-                        : 0;
-                    var docs = snapshot.hasData ? snapshot.data!.docs : [];
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "PLAYERS ($playerCount/4)",
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade800,
-                          ),
-                        ),
-                        SizedBox(height: 20.h),
-                        Expanded(
-                          child: snapshot.hasData
-                              ? GridView.builder(
-                                  physics: const BouncingScrollPhysics(),
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        childAspectRatio: 0.8,
-                                        crossAxisSpacing: 15.w,
-                                        mainAxisSpacing: 15.h,
-                                      ),
-                                  itemCount:
-                                      playerCount + (playerCount < 4 ? 1 : 0),
-                                  itemBuilder: (context, index) {
-                                    if (index == playerCount) {
-                                      return _buildEmptyPlayerSlot();
-                                    }
-                                    var data =
-                                        docs[index].data()
-                                            as Map<String, dynamic>;
-                                    // Identifikasi diri sendiri
-                                    bool isMeLocally =
-                                        data['name'] ==
-                                        (_isHost
-                                            ? 'Kamu (Host)'
-                                            : 'Teman Baru');
-                                    var playerMap = {
-                                      "name": data['name'] ?? 'Player',
-                                      "isMe": isMeLocally,
-                                      "avatar":
-                                          data['avatar'], // Lempar data muka ke widget
-                                    };
-                                    return _buildPlayerCard(playerMap);
-                                  },
-                                )
-                              : const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.orange,
-                                  ),
-                                ),
-                        ),
-
-                        // Action Buttons Base on Role
-                        if (_isHost) ...[
-                          SizedBox(height: 15.h),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 65.h,
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                int randomLevelIndex = Random().nextInt(
-                                  listResep.length,
-                                );
-                                await FirebaseFirestore.instance
-                                    .collection('rooms')
-                                    .doc(_roomCode)
-                                    .update({
-                                      'status': 'playing',
-                                      'selectedLevelIndex': randomLevelIndex,
-                                      'startedAt': FieldValue.serverTimestamp(),
-                                      'durationSeconds': 60,
-                                    });
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("Memilih level acak..."),
-                                    ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green.shade600,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20.w),
-                                ),
-                                elevation: 8,
-                              ),
-                              child: Text(
-                                "START GAME",
-                                style: TextStyle(
-                                  fontSize: 22.sp,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: 1.5.w,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ] else ...[
-                          SizedBox(height: 15.h),
-                          Center(
-                            child: Text(
-                              "Menunggu Host memulai...",
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ),
+          SizedBox(
+            width: double.infinity,
+            height: 60.h,
+            child: ElevatedButton(
+              onPressed: _joinRoom,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade900, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
+              child: const Text("MASUK SEKARANG", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ),
         ],
@@ -859,43 +468,99 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
     );
   }
 
-  Widget _buildPlayerCard(Map<String, dynamic> player) {
-    bool isMe = player["isMe"];
+  Widget _buildInsideLobbyView(bool isTablet) {
+    return Column(
+      children: [
+        SizedBox(height: 10.h),
+        const Text("ROOM CODE", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, letterSpacing: 2)),
+        ScaleTransition(
+          scale: _pulseAnimation,
+          child: Container(
+            margin: EdgeInsets.symmetric(vertical: 10.h),
+            padding: EdgeInsets.symmetric(horizontal: 30.w, vertical: 10.h),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+            child: Text(_roomCode, style: TextStyle(fontSize: 40.sp, fontWeight: FontWeight.w900, color: Colors.orange.shade900, letterSpacing: 5)),
+          ),
+        ),
+        const Text("Menunggu pemain lain...", style: TextStyle(color: Colors.white, fontStyle: FontStyle.italic)),
+        SizedBox(height: 30.h),
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(40))),
+            padding: EdgeInsets.all(25.w),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _roomCode.isNotEmpty ? FirebaseFirestore.instance.collection('rooms').doc(_roomCode).collection('players').snapshots() : const Stream.empty(),
+              builder: (context, snapshot) {
+                int playerCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+                var docs = snapshot.hasData ? snapshot.data!.docs : [];
+
+                return Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text("PLAYERS ($playerCount/4)", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                    SizedBox(height: 15.h),
+                    Expanded(
+                      child: GridView.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: isTablet ? 4 : 2, // 4 kolom jika tablet
+                          childAspectRatio: 0.85,
+                          crossAxisSpacing: 15,
+                          mainAxisSpacing: 15,
+                        ),
+                        itemCount: playerCount + (playerCount < 4 ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == playerCount) return _buildEmptyPlayerSlot();
+                          var data = docs[index].data() as Map<String, dynamic>;
+                          return _buildPlayerCard(data, docs[index].id == _playerId);
+                        },
+                      ),
+                    ),
+                    if (_isHost) _buildStartButton() else const Padding(padding: EdgeInsets.all(10), child: Text("Menunggu Host memulai...", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold))),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStartButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 60.h,
+      child: ElevatedButton(
+        onPressed: () async {
+          int randomLevelIndex = Random().nextInt(listResep.length);
+          await FirebaseFirestore.instance.collection('rooms').doc(_roomCode).update({
+            'status': 'playing',
+            'selectedLevelIndex': randomLevelIndex,
+            'startedAt': FieldValue.serverTimestamp(),
+          });
+        },
+        style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade600, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+        child: Text("START GAME", style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900, color: Colors.white)),
+      ),
+    );
+  }
+
+  Widget _buildPlayerCard(Map<String, dynamic> data, bool isMe) {
     return Container(
       decoration: BoxDecoration(
         color: isMe ? Colors.orange.shade50 : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(20.w),
-        border: Border.all(
-          color: isMe ? Colors.orange : Colors.grey.shade300,
-          width: 2.w,
-        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isMe ? Colors.orange : Colors.grey.shade300, width: 2),
       ),
       child: Column(
         children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(12.w),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  shape: BoxShape.circle,
-                ),
-                child: ClipOval(child: _buildPlayerAvatar(player["avatar"])),
-              ),
-            ),
-          ),
+          Expanded(child: Padding(padding: const EdgeInsets.all(10), child: ClipOval(child: _buildPlayerAvatar(data['avatar'])))),
           Padding(
-            padding: EdgeInsets.only(bottom: 15.h),
-            child: Text(
-              player["name"],
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16.sp,
-                color: Colors.grey.shade800,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Text(data['name'] ?? 'Player', style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ],
       ),
@@ -906,84 +571,31 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20.w),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          style: BorderStyle.solid,
-          width: 2.w,
-        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
       ),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.person_add_disabled_rounded,
-              size: 40.w,
-              color: Colors.grey.shade400,
-            ),
-            SizedBox(height: 10.h),
-            Text(
-              "Waiting...",
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w600,
-                fontSize: 14.sp,
-              ),
-            ),
-          ],
-        ),
+        child: Icon(Icons.person_add_alt_1, size: 40.w, color: Colors.grey.shade300),
       ),
     );
   }
 
-  Widget _buildBigButton({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required Color textColor,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
+  Widget _buildBigButton({required String title, required String subtitle, required IconData icon, required Color color, required Color textColor, required VoidCallback onTap}) {
+    return InkWell(
       onTap: onTap,
       child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 25.h, horizontal: 20.w),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20.w),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black26,
-              offset: Offset(0, 8),
-              blurRadius: 15,
-            ),
-          ],
-        ),
+        padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 20.w),
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))]),
         child: Row(
           children: [
-            Icon(icon, size: 50.w, color: textColor),
-            SizedBox(width: 20.w),
+            Icon(icon, size: 45.w, color: textColor),
+            SizedBox(width: 15.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.w900,
-                      color: textColor,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: textColor.withOpacity(0.7),
-                    ),
-                  ),
+                  Text(title, style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900, color: textColor)),
+                  Text(subtitle, style: TextStyle(fontSize: 12.sp, color: textColor.withOpacity(0.7))),
                 ],
               ),
             ),
@@ -992,11 +604,31 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen>
       ),
     );
   }
+
+  Widget _buildBottomNav(BuildContext context, double screenWidth) {
+    return Container(
+      margin: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
+      height: 65.h,
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(35), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)]),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _navIcon(context, Icons.home_outlined, HomepageScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor, hairStyle: widget.hairStyle), screenWidth),
+          _navIcon(context, Icons.play_circle_outline, LevelsScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor, hairStyle: widget.hairStyle), screenWidth),
+          _navIcon(context, Icons.menu_book_outlined, SpiceJournalScreen(skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath, nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath, bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor, hairStyle: widget.hairStyle), screenWidth),
+          Icon(Icons.person, color: Colors.orange, size: 30.w),
+        ],
+      ),
+    );
+  }
+
+  Widget _navIcon(BuildContext context, IconData icon, Widget target, double screenWidth) {
+    return IconButton(icon: Icon(icon, color: Colors.grey, size: 28.w), onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => target)));
+  }
 }
 
 class GachaAnimationDialog extends StatefulWidget {
   const GachaAnimationDialog({super.key});
-
   @override
   State<GachaAnimationDialog> createState() => _GachaAnimationDialogState();
 }
@@ -1004,65 +636,32 @@ class GachaAnimationDialog extends StatefulWidget {
 class _GachaAnimationDialogState extends State<GachaAnimationDialog> {
   int _currentIndex = 0;
   late Timer _timer;
-
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      setState(() {
-        _currentIndex = Random().nextInt(listResep.length);
-      });
-    });
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (t) => setState(() => _currentIndex = Random().nextInt(listResep.length)));
   }
-
   @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
+  void dispose() { _timer.cancel(); super.dispose(); }
   @override
   Widget build(BuildContext context) {
     var resep = listResep[_currentIndex];
     return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      child: Container(
-        padding: EdgeInsets.all(20.w),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20.w),
-        ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              "Mengacak Level...",
-              style: TextStyle(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-              ),
-            ),
-            SizedBox(height: 20.h),
+            const Text("Mengacak Level...", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orange)),
+            const SizedBox(height: 20),
             Container(
-              width: 150.w,
-              height: 150.w,
-              decoration: BoxDecoration(
-                color: resep.sunburstColor,
-                borderRadius: BorderRadius.circular(20.w),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20.w),
-                child: Image.asset(resep.imagePath, fit: BoxFit.cover),
-              ),
+              width: 120.w, height: 120.w,
+              decoration: BoxDecoration(color: resep.sunburstColor, borderRadius: BorderRadius.circular(15)),
+              child: Image.asset(resep.imagePath, fit: BoxFit.cover),
             ),
-            SizedBox(height: 20.h),
-            Text(
-              resep.title,
-              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
+            const SizedBox(height: 15),
+            Text(resep.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

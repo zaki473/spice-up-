@@ -39,6 +39,10 @@ dependencies:
   firebase_core: ^4.7.0
   cloud_firestore: ^6.3.0
   firebase_auth: ^6.4.0
+  flutter_secure_storage: ^10.1.0
+  flutter_dotenv: ^6.0.1
+  safe_device: ^1.3.10
+  connectivity_plus: ^7.1.1
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +82,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env
   # Daftar semua aset yang digunakan dalam aplikasi
     # bagian logo dan kulit
     - assets/images/logo.png
@@ -136,14 +141,14 @@ flutter:
     - assets/badges/SU_BADGES_02.svg
     - assets/badges/SU_BADGES_03.svg
     # bagian resep  
-    - assets/food/SU_FOOD_01_MI_GOMAK.png
-    - assets/food/SU_FOOD_01_IKAN_KUAH_KUNING.png
-    - assets/food/SU_FOOD_02_AYAM_TALIWANG.png
-    - assets/food/SU_FOOD_02_PAPEDA.png
-    - assets/food/SU_FOOD_02_TINUTUAN.png
-    - assets/food/SU_FOOD_03_ARSIK.png
-    - assets/food/SU_FOOD_03_AYAMBETUTU.png
-    - assets/food/SU_FOOD_03_COTOMAKASSAR.png
+    - assets/food1/SU_FOOD_01_MI_GOMAK.png
+    - assets/food1/SU_FOOD_01_IKAN_KUAH_KUNING.png
+    - assets/food1/SU_FOOD_02_AYAM_TALIWANG.png
+    - assets/food1/SU_FOOD_02_PAPEDA.png
+    - assets/food1/SU_FOOD_02_TINUTUAN.png
+    - assets/food1/SU_FOOD_03_ARSIK.png
+    - assets/food1/SU_FOOD_03_AYAMBETUTU.png
+    - assets/food1/SU_FOOD_03_COTOMAKASSAR.png
     # bagian stars
     - assets/stars/SU_ICONS_01.svg
     - assets/stars/SU_ICONS_02.svg

@@ -4,8 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../models/recipe_model.dart';
 import 'score_screen.dart';
 import 'multiplayer_score_screen.dart';
-import 'levels_screen.dart';
-import 'profile_screen.dart'; // pastikan import ini ada
+import 'profile_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../data/recipe_data.dart';
@@ -51,11 +50,8 @@ class GameplayScreen extends StatefulWidget {
 class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObserver {
   int currentIndex = 0;
   int score = 0;
-  
-  // Variable baru untuk mengontrol feedback jawaban
   int? selectedAnswerIndex;
   bool isAnswering = false;
-
   int _timeLeft = 60;
   Timer? _timer;
 
@@ -68,6 +64,7 @@ class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObse
     }
   }
 
+  // --- LOGIKA TIMER & AFK (TETAP SAMA) ---
   void _startTimer() async {
     if (widget.isMultiplayer && widget.roomCode != null) {
       try {
@@ -92,9 +89,7 @@ class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObse
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
       if (_timeLeft > 0) {
-        setState(() {
-          _timeLeft--;
-        });
+        setState(() => _timeLeft--);
       } else {
         _timer?.cancel();
         _endGame();
@@ -136,6 +131,7 @@ class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObse
     }
   }
 
+  // --- LOGIKA SELESAI GAME (TETAP SAMA) ---
   void _endGame() async {
     if (widget.isMultiplayer && widget.roomCode != null && widget.playerId != null) {
       try {
@@ -172,7 +168,7 @@ class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObse
       return;
     }
 
-    // ORIGINAL SINGLE-PLAYER LOGIC
+    // Update Progress Single Player
     int totalSoal = widget.resep.questions.length;
     int maxScore = totalSoal * 10;
     double starCalculation = (score / maxScore) * 5;
@@ -180,56 +176,48 @@ class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObse
     if (score > 0 && finalStars == 0) finalStars = 1;
     widget.resep.stars = finalStars;
 
-    // UPDATE TO FIRESTORE
     final User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-      
       try {
         await FirebaseFirestore.instance.runTransaction((transaction) async {
           DocumentSnapshot snapshot = await transaction.get(userRef);
           if (!snapshot.exists) return;
-          
           Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-          
-          // Update Progress
           Map<String, dynamic> progress = data['progress'] is Map ? Map<String, dynamic>.from(data['progress']) : {};
-          int currentStars = progress[widget.resep.title] ?? 0;
-          if (finalStars > currentStars) {
+          if (finalStars > (progress[widget.resep.title] ?? 0)) {
             progress[widget.resep.title] = finalStars;
           }
-
-          // Update Recently Played
           List<dynamic> recent = data['recently_played'] is List ? List<dynamic>.from(data['recently_played']) : [];
           recent.remove(widget.resep.title);
           recent.insert(0, widget.resep.title);
           if (recent.length > 4) recent = recent.sublist(0, 4);
 
-          // Update Badges
-          List<dynamic> badges = data['unlocked_badges'] is List ? List<dynamic>.from(data['unlocked_badges']) : [];
-          int recipeIndex = listResep.indexOf(widget.resep);
-          
-          if (finalStars > 0) {
-            if (recipeIndex == 0 && !badges.contains("SPICE SPROUT")) {
-              badges.add("SPICE SPROUT");
-            } else if (recipeIndex > 0 && widget.resep.difficulty != listResep[recipeIndex - 1].difficulty) {
-              if (widget.resep.difficulty == Difficulty.litle && !badges.contains("LITTLE MORTAR")) {
-                badges.add("LITTLE MORTAR");
-              } else if (widget.resep.difficulty == Difficulty.bumbu && !badges.contains("BUMBU BUDDY")) {
-                badges.add("BUMBU BUDDY");
-              }
+          // Evaluasi Ulang Badges
+          List<String> unlockedBadges = [];
+          if (progress.isNotEmpty) unlockedBadges.add("SPICE SPROUT");
+
+          bool allLitleFinished = true;
+          bool allBumbuFinished = true;
+          for (var r in listResep) {
+            if (r.difficulty == Difficulty.litle && (progress[r.title] ?? 0) == 0) {
+              allLitleFinished = false;
+            }
+            if (r.difficulty == Difficulty.bumbu && (progress[r.title] ?? 0) == 0) {
+              allBumbuFinished = false;
             }
           }
+
+          if (allLitleFinished) unlockedBadges.add("LITTLE MORTAR");
+          if (allBumbuFinished) unlockedBadges.add("BUMBU BUDDY");
 
           transaction.set(userRef, {
             'progress': progress,
             'recently_played': recent,
-            'unlocked_badges': badges,
+            'unlocked_badges': unlockedBadges,
           }, SetOptions(merge: true));
         });
-      } catch (e) {
-        debugPrint("Failed to update progress: $e");
-      }
+      } catch (e) { debugPrint("Failed update: $e"); }
     }
 
     if (!mounted) return;
@@ -254,42 +242,16 @@ class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObse
     );
   }
 
-  Widget _buildQuizImage(String path) {
-    if (path.endsWith('.svg')) {
-      return SvgPicture.asset(
-        path,
-        fit: BoxFit.contain,
-        width: double.infinity,
-        height: double.infinity,
-        placeholderBuilder: (context) => const Center(
-          child: CircularProgressIndicator(color: Colors.orange),
-        ),
-      );
-    } else {
-      return Image.asset(
-        path,
-        fit: BoxFit.contain,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) =>
-            const Icon(Icons.broken_image, size: 80, color: Colors.grey),
-      );
-    }
-  }
-
-  // Fungsi Logika Jawaban yang Diperbarui
   void _answer(int index) async {
-    if (isAnswering) return; // Mencegah klik ganda saat animasi jeda
-
+    if (isAnswering) return;
     setState(() {
       isAnswering = true;
       selectedAnswerIndex = index;
     });
 
-    // Cek jika benar
     if (index == widget.resep.questions[currentIndex].correctAnswerIndex) {
       score += 10;
-      if (widget.isMultiplayer && widget.roomCode != null && widget.playerId != null) {
+      if (widget.isMultiplayer && widget.roomCode != null) {
         double progress = ((currentIndex + 1) / widget.resep.questions.length) * 100;
         FirebaseFirestore.instance.collection('rooms').doc(widget.roomCode)
            .collection('players').doc(widget.playerId).update({
@@ -297,19 +259,9 @@ class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObse
            'progress': progress,
         });
       }
-    } else {
-      if (widget.isMultiplayer && widget.roomCode != null && widget.playerId != null) {
-        double progress = ((currentIndex + 1) / widget.resep.questions.length) * 100;
-        FirebaseFirestore.instance.collection('rooms').doc(widget.roomCode)
-           .collection('players').doc(widget.playerId).update({
-           'progress': progress,
-        });
-      }
     }
 
-    // Beri jeda 1.5 detik agar user bisa melihat jawaban yang benar/salah
     await Future.delayed(const Duration(milliseconds: 1500));
-
     if (!mounted) return;
 
     if (currentIndex < widget.resep.questions.length - 1) {
@@ -319,14 +271,19 @@ class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObse
         isAnswering = false;
       });
     } else {
-      // Game Selesai
       _timer?.cancel();
       _endGame();
     }
   }
 
+  // --- UI RESPONSIVE ---
   @override
   Widget build(BuildContext context) {
+    final Size screenSize = MediaQuery.of(context).size;
+    final double screenWidth = screenSize.width;
+    final double screenHeight = screenSize.height;
+    final bool isTablet = screenWidth > 600;
+    
     final currentQuestion = widget.resep.questions[currentIndex];
 
     return Scaffold(
@@ -342,148 +299,109 @@ class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObse
         child: SafeArea(
           child: Column(
             children: [
-              _buildCustomHeader(),
-              const SizedBox(height: 10),
-              if (widget.isMultiplayer) _buildTimer(),
+              _buildHeader(screenWidth),
+              
+              if (widget.isMultiplayer) _buildTimer(screenWidth),
+
               Text(
                 "QUESTION ${currentIndex + 1}",
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 26,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.06, 
                   fontWeight: FontWeight.w900,
                   color: Colors.orange,
                   fontStyle: FontStyle.italic,
                 ),
               ),
-              const SizedBox(height: 5),
-
-              // --- CLIPBOARD AREA ---
+              
+              // --- CLIPBOARD AREA (RESPONSIVE) ---
               Expanded(
-                flex: 4,
-                child: Stack(
-                  alignment: Alignment.topCenter,
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: MediaQuery.of(context).size.width * 0.88,
-                      margin: const EdgeInsets.only(top: 25, bottom: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFBCAAA4),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF8D6E63), width: 8),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.all(6),
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                flex: 5,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+                  child: Stack(
+                    alignment: Alignment.topCenter,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(top: 25, bottom: 10),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(5),
+                          color: const Color(0xFFBCAAA4),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFF8D6E63), width: screenWidth * 0.02),
                         ),
-                        child: Column(
-                          children: [
-                            Text(
-                              currentQuestion.text,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF4E342E)),
-                            ),
-                            const Divider(color: Colors.orange, thickness: 2),
-                            Expanded(
-                              child: Container(
-                                width: double.infinity,
-                                alignment: Alignment.center,
+                        child: Container(
+                          margin: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                currentQuestion.text,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: isTablet ? 24 : 18, 
+                                  fontWeight: FontWeight.w800, 
+                                  color: const Color(0xFF4E342E)
+                                ),
+                              ),
+                              const Divider(color: Colors.orange, thickness: 2),
+                              Expanded(
                                 child: _buildQuizImage(currentQuestion.imagePath ?? widget.resep.imagePath),
                               ),
-                            ),
-                            const SizedBox(height: 5),
-                            Row(
-                              children: [
-                                const Text("????", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orange)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    "HINT: ${currentQuestion.hint ?? 'Perhatikan tekstur dan warna pada gambar!'}",
-                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54),
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  Text("????", style: TextStyle(fontSize: screenWidth * 0.05, fontWeight: FontWeight.bold, color: Colors.orange)),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      "HINT: ${currentQuestion.hint ?? 'Perhatikan tekstur dan warna pada gambar!'}",
+                                      style: TextStyle(fontSize: isTablet ? 14 : 10, fontWeight: FontWeight.bold, color: Colors.black54),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    // Penjepit Clipboard
-                    Positioned(
-                      top: 5,
-                      child: Container(
-                        width: 85, height: 45,
-                        decoration: BoxDecoration(color: const Color(0xFFD84315), borderRadius: BorderRadius.circular(12)),
-                        child: Center(child: Container(width: 16, height: 16, decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle))),
+                      // Clip Penjepit Clipboard
+                      Positioned(
+                        top: 5,
+                        child: Container(
+                          width: screenWidth * 0.2, 
+                          height: 40,
+                          decoration: BoxDecoration(color: const Color(0xFFD84315), borderRadius: BorderRadius.circular(12)),
+                          child: Center(child: Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle))),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
-              // --- PILIHAN JAWABAN DENGAN LOGIKA WARNA ---
+              // --- PILIHAN JAWABAN (GRID RESPONSIVE) ---
               Padding(
-                padding: const EdgeInsets.fromLTRB(30, 5, 30, 10),
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08, vertical: 10),
                 child: GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 3.2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: isTablet ? 4.0 : 2.8, // Aspect ratio disesuaikan tablet vs hp
                   ),
                   itemCount: currentQuestion.options.length,
                   itemBuilder: (context, index) {
-                    // Logika Penentuan Warna
-                    Color btnColorStart = Colors.orange;
-                    Color btnColorEnd = const Color(0xFFFFB74D);
-
-                    if (selectedAnswerIndex != null) {
-                      if (index == currentQuestion.correctAnswerIndex) {
-                        // Jawaban yang benar selalu hijau
-                        btnColorStart = Colors.green;
-                        btnColorEnd = Colors.greenAccent;
-                      } else if (index == selectedAnswerIndex) {
-                        // Jawaban yang dipilih salah menjadi merah
-                        btnColorStart = Colors.red;
-                        btnColorEnd = Colors.redAccent;
-                      } else {
-                        // Sisanya menjadi abu-abu transparan
-                        btnColorStart = Colors.grey.shade400;
-                        btnColorEnd = Colors.grey.shade300;
-                      }
-                    }
-
-                    return GestureDetector(
-                      onTap: () => _answer(index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: LinearGradient(
-                            colors: [btnColorStart, btnColorEnd],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 3))],
-                        ),
-                        child: Center(
-                          child: Text(
-                            currentQuestion.options[index],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                        ),
-                      ),
-                    );
+                    return _buildOptionButton(index, currentQuestion.options[index], currentQuestion.correctAnswerIndex, screenWidth);
                   },
                 ),
               ),
-
               const SizedBox(height: 10),
             ],
           ),
@@ -492,60 +410,84 @@ class _GameplayScreenState extends State<GameplayScreen> with WidgetsBindingObse
     );
   }
 
-  Widget _buildTimer() {
-    bool isDanger = _timeLeft <= 10;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDanger ? Colors.red : Colors.orange,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
-      ),
-      child: Text(
-        "$_timeLeft s",
-        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+  Widget _buildOptionButton(int index, String text, int correctIndex, double screenWidth) {
+    Color btnColorStart = Colors.orange;
+    Color btnColorEnd = const Color(0xFFFFB74D);
+
+    if (selectedAnswerIndex != null) {
+      if (index == correctIndex) {
+        btnColorStart = Colors.green;
+        btnColorEnd = Colors.greenAccent;
+      } else if (index == selectedAnswerIndex) {
+        btnColorStart = Colors.red;
+        btnColorEnd = Colors.redAccent;
+      } else {
+        btnColorStart = Colors.grey.shade400;
+        btnColorEnd = Colors.grey.shade300;
+      }
+    }
+
+    return GestureDetector(
+      onTap: () => _answer(index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          gradient: LinearGradient(colors: [btnColorStart, btnColorEnd], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 3))],
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: screenWidth * 0.035),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  // --- HEADER DENGAN NAVIGASI KE PROFILE ---
-  Widget _buildCustomHeader() {
+  Widget _buildTimer(double screenWidth) {
+    bool isDanger = _timeLeft <= 10;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDanger ? Colors.red : Colors.orange,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text("$_timeLeft s", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+    );
+  }
+
+  Widget _buildHeader(double screenWidth) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ProfileSettingPage(
-                  skinPath: widget.skinPath,
-                  eyePath: widget.eyePath,
-                  mouthPath: widget.mouthPath,
-                  nosePath: widget.nosePath,
-                  browsPath: widget.browsPath,
-                  hairPath: widget.hairPath,
-                  bangsPath: widget.bangsPath,
-                  shirtPath: widget.shirtPath,
-                  shirtColor: widget.shirtColor,
-                  hairStyle: widget.hairStyle,
-                )),
-              );
-            },
-            child: const CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Colors.orange),
-            ),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileSettingPage(
+              skinPath: widget.skinPath, eyePath: widget.eyePath, mouthPath: widget.mouthPath,
+              nosePath: widget.nosePath, browsPath: widget.browsPath, hairPath: widget.hairPath,
+              bangsPath: widget.bangsPath, shirtPath: widget.shirtPath, shirtColor: widget.shirtColor,
+              hairStyle: widget.hairStyle,
+            ))),
+            child: CircleAvatar(radius: screenWidth * 0.05, backgroundColor: Colors.white, child: Icon(Icons.person, color: Colors.orange, size: screenWidth * 0.06)),
           ),
-          SvgPicture.asset(
-            'assets/images/logo_dan_bg/SU_TYPEFACE.svg',
-            width: 80,
-          ),
+          SvgPicture.asset('assets/images/logo_dan_bg/SU_TYPEFACE.svg', width: screenWidth * 0.2),
         ],
       ),
     );
+  }
+
+  Widget _buildQuizImage(String path) {
+    return path.endsWith('.svg') 
+      ? SvgPicture.asset(path, fit: BoxFit.contain) 
+      : Image.asset(path, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 50));
   }
 }

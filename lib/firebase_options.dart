@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -40,8 +41,8 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBMeVStFwAAdLvqxzH_sJ2OzTF4h2jorJQ',
+  static FirebaseOptions web = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_API_KEY_WEB'] ?? '',
     appId: '1:794274906749:web:8c1f019dbbb4e5fdb8e714',
     messagingSenderId: '794274906749',
     projectId: 'spice-up-1aece',
@@ -50,16 +51,16 @@ class DefaultFirebaseOptions {
     measurementId: 'G-7BPVF84N6L',
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDvbFe7i2GsHQCfnQC-RXs9TOKqbUa9b0E',
+  static FirebaseOptions android = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_API_KEY_ANDROID'] ?? '',
     appId: '1:794274906749:android:8e7063d9d42a3038b8e714',
     messagingSenderId: '794274906749',
     projectId: 'spice-up-1aece',
     storageBucket: 'spice-up-1aece.firebasestorage.app',
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyC_plv9voJX46h7996pp5yz0vZjuIK2FH8',
+  static FirebaseOptions ios = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_API_KEY_IOS'] ?? '',
     appId: '1:794274906749:ios:981f9fd582b0ac7db8e714',
     messagingSenderId: '794274906749',
     projectId: 'spice-up-1aece',
@@ -67,8 +68,8 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.spiceUp',
   );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyC_plv9voJX46h7996pp5yz0vZjuIK2FH8',
+  static FirebaseOptions macos = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_API_KEY_IOS'] ?? '',
     appId: '1:794274906749:ios:981f9fd582b0ac7db8e714',
     messagingSenderId: '794274906749',
     projectId: 'spice-up-1aece',
@@ -76,8 +77,8 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.spiceUp',
   );
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBMeVStFwAAdLvqxzH_sJ2OzTF4h2jorJQ',
+  static FirebaseOptions windows = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_API_KEY_WINDOWS'] ?? '',
     appId: '1:794274906749:web:bd19247a5fdcf075b8e714',
     messagingSenderId: '794274906749',
     projectId: 'spice-up-1aece',

@@ -124,7 +124,13 @@ class MultiplayerScoreScreen extends StatelessWidget {
                   ),
                   
                   const Spacer(),
-                  _buildReturnButton(context),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildReturnButton(context, isLeave: false),
+                      _buildReturnButton(context, isLeave: true),
+                    ],
+                  ),
                   SizedBox(height: 15.h),
                   _buildBottomNav(context),
                   SizedBox(height: 10.h),
@@ -186,25 +192,47 @@ class MultiplayerScoreScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReturnButton(BuildContext context) {
+  Widget _buildReturnButton(BuildContext context, {required bool isLeave}) {
     return ElevatedButton.icon(
-      onPressed: () {
-        // Keluar dari room dan kembali ke Lobby
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => MultiplayerLobbyScreen(
-            skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
-            nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
-            bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
-            hairStyle: hairStyle,
-          )),
-        );
+      onPressed: () async {
+        if (isLeave) {
+          bool isHost = playerId == 'host_id_1';
+          if (isHost) {
+            FirebaseFirestore.instance.collection('rooms').doc(roomCode).update({'status': 'closed'}).catchError((_) {});
+          } else {
+            FirebaseFirestore.instance.collection('rooms').doc(roomCode).collection('players').doc(playerId).delete().catchError((_) {});
+          }
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MultiplayerLobbyScreen(
+              skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+              nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+              bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+              hairStyle: hairStyle,
+            )),
+          );
+        } else {
+          bool isHost = playerId == 'host_id_1';
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MultiplayerLobbyScreen(
+              initialRoomCode: roomCode,
+              initialPlayerId: playerId,
+              initialIsHost: isHost,
+              fromScoreScreen: true,
+              skinPath: skinPath, eyePath: eyePath, mouthPath: mouthPath,
+              nosePath: nosePath, browsPath: browsPath, hairPath: hairPath,
+              bangsPath: bangsPath, shirtPath: shirtPath, shirtColor: shirtColor,
+              hairStyle: hairStyle,
+            )),
+          );
+        }
       },
-      icon: const Icon(Icons.logout_rounded, color: Colors.white),
-      label: const Text("LEAVE ROOM", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      icon: Icon(isLeave ? Icons.logout_rounded : Icons.replay_rounded, color: Colors.white, size: 20.sp),
+      label: Text(isLeave ? "LEAVE" : "BACK TO LOBBY", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.sp)),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.red.shade700,
-        padding: EdgeInsets.symmetric(horizontal: 30.w, vertical: 15.h),
+        backgroundColor: isLeave ? Colors.red.shade700 : Colors.green.shade600,
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.w)),
         elevation: 5,
       ),

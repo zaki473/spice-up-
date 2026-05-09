@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../constants/app_colors.dart';
+import '../utils/app_dialogs.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -21,15 +22,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     String confirmPass = _confirmPassController.text;
 
     if (newPass.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Password minimal 6 karakter!"),
-          backgroundColor: Colors.red));
+      AppDialogs.showErrorDialog(
+        context, 
+        'Input Tidak Valid', 
+        'Password minimal 6 karakter!'
+      );
       return;
     }
     if (newPass != confirmPass) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Konfirmasi password tidak cocok!"),
-          backgroundColor: Colors.red));
+      AppDialogs.showErrorDialog(
+        context, 
+        'Input Tidak Valid', 
+        'Konfirmasi password tidak cocok!'
+      );
       return;
     }
 
@@ -39,20 +44,27 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       await FirebaseAuth.instance.currentUser?.updatePassword(newPass);
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Password berhasil diperbarui!"),
-          backgroundColor: Colors.green,
-        ),
+      AppDialogs.showSuccessDialog(
+        context, 
+        'Berhasil', 
+        'Password Anda telah berhasil diperbarui!',
+        onConfirm: () {
+          Navigator.pop(context);
+        },
       );
-      Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(e.message ??
-                'Gagal mengganti password. Silakan login ulang dan coba lagi.'),
-            backgroundColor: Colors.red),
+      AppDialogs.showErrorDialog(
+        context, 
+        'Gagal', 
+        e.message ?? 'Gagal mengganti password. Silakan login ulang dan coba lagi.'
+      );
+    } catch (e) {
+      if (!mounted) return;
+      AppDialogs.showErrorDialog(
+        context, 
+        'Error', 
+        'Terjadi kesalahan sistem.'
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

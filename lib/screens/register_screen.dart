@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_colors.dart';
+import '../utils/app_dialogs.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -59,15 +60,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (!mounted) return;
         Navigator.pop(context); // Tutup loading loading
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration Successful! Silakan Login.'), backgroundColor: Colors.green),
+        AppDialogs.showSuccessDialog(
+          context, 
+          'Registrasi Berhasil', 
+          'Akun Anda telah berhasil dibuat. Silakan login untuk memulai petualangan!',
+          onConfirm: () {
+            Navigator.pop(context); // Kembali ke login screen
+          },
         );
-        Navigator.pop(context); // Kembali ke login screen
       } on FirebaseAuthException catch (e) {
         if (!mounted) return;
         Navigator.pop(context); // Tutup loading loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Registration failed'), backgroundColor: Colors.red),
+        AppDialogs.showErrorDialog(
+          context, 
+          'Registrasi Gagal', 
+          e.message ?? 'Terjadi kesalahan saat membuat akun.'
+        );
+      } catch (e) {
+        if (!mounted) return;
+        Navigator.pop(context);
+        AppDialogs.showErrorDialog(
+          context, 
+          'Error', 
+          'Terjadi kesalahan sistem.'
         );
       }
     }

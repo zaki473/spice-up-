@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_colors.dart';
 import 'homepage_screen.dart';
+import '../utils/app_dialogs.dart';
 
 class CharacterCustomizationScreen extends StatefulWidget {
   const CharacterCustomizationScreen({super.key});
@@ -165,14 +166,14 @@ class _CharacterCustomizationScreenState
                             child: Center(
                               child: Transform.translate(
                                 offset: const Offset(
-                                  5,
-                                  -10,
+                                  4,
+                                  -9,
                                 ), // kanan & sedikit turun
                                 child: Transform.scale(
                                   scale: 1.2,
                                   child: _renderPart(
                                     selectedTopPath,
-                                    avatarSize * 3.31,
+                                    avatarSize * 3.34,
                                   ),
                                 ),
                               ),
@@ -270,23 +271,29 @@ class _CharacterCustomizationScreenState
               if (!mounted) return;
               Navigator.pop(context); // Tutup Loading
 
-              // 2. Teruskan pengguna ke Homepage membawa Avatarnya
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HomepageScreen(
-                    skinPath: selectedSkinPath,
-                    eyePath: selectedEyePath,
-                    mouthPath: selectedMouthPath,
-                    nosePath: selectedNosePath,
-                    browsPath: selectedBrowsPath,
-                    hairPath: selectedHairPath,
-                    bangsPath: selectedBangsPath,
-                    shirtPath: selectedTopPath,
-                    shirtColor: Colors.white,
-                    hairStyle: Icons.face,
-                  ),
-                ),
+              AppDialogs.showSuccessDialog(
+                context, 
+                'Karakter Disimpan', 
+                'Avatar baru Anda telah berhasil diperbarui!',
+                onConfirm: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HomepageScreen(
+                        skinPath: selectedSkinPath,
+                        eyePath: selectedEyePath,
+                        mouthPath: selectedMouthPath,
+                        nosePath: selectedNosePath,
+                        browsPath: selectedBrowsPath,
+                        hairPath: selectedHairPath,
+                        bangsPath: selectedBangsPath,
+                        shirtPath: selectedTopPath,
+                        shirtColor: Colors.white,
+                        hairStyle: Icons.face,
+                      ),
+                    ),
+                  );
+                },
               );
             },
             style: ElevatedButton.styleFrom(
